@@ -103,6 +103,8 @@ public class GameArena extends JPanel implements Runnable, KeyListener, MouseLis
 		colours.put("RED", Color.RED);
 		colours.put("WHITE", Color.WHITE);
 		colours.put("YELLOW", Color.YELLOW);
+		colours.put("BROWN", new Color(170,130,30));
+		colours.put("DARKGREEN", new Color(50,180,50));
 
 		// Setup graphics rendering hints for quality
 		renderingHints = new HashMap<>();

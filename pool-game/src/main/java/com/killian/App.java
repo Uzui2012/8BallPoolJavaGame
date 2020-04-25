@@ -6,9 +6,8 @@ package com.killian;
  */
 public class App 
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws InterruptedException
     {
-        GameArena gm = new GameArena(1920, 1080);
-        gm.run();
+        Pool pl = new Pool();   
     }
 }
