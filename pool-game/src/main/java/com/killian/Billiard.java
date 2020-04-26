@@ -5,6 +5,8 @@ public class Billiard extends Ball{
 
     public Billiard(double x, double y, double ratio){
         super(x, y, 18.75*ratio, "WHITE");
+        this.xVel = 0;
+        this.yVel = 0;;
     }
 
     public void setXVel(double xVel){

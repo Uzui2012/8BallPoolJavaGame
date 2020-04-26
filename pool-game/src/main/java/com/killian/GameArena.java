@@ -80,7 +80,7 @@ public class GameArena extends JPanel implements Runnable, KeyListener, MouseLis
 			this.frame = new JFrame();
 			frame.setTitle("Let's Play!");
 			frame.setSize(width, height);
-			frame.setResizable(false);
+			frame.setResizable(true);
 			frame.setBackground(Color.BLACK);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setContentPane(this);
