@@ -10,21 +10,22 @@ public class Pool {
         ratio = 1.5;
         diff = 30 * ratio;
         startOfCloth = 50 + diff;
-        endOfClothX = startOfCloth + 900*ratio;
-        endOfClothY = startOfCloth + 450*ratio;
+        endOfClothX = startOfCloth + 900 * ratio;
+        endOfClothY = startOfCloth + 450 * ratio;
         friction = 0.98;
-        //Class + Game Arena set up               
+        // Class + Game Arena set up
         init();
-        //Game Loop
-        while(true){
-            update(); 
-            Thread.sleep(30); //Set FPS
-        }        
+        // Game Loop
+        while (true) {
+            update();
+            Thread.sleep(6); // Set FPS
+        }
     }
 
-    private void update(){
+    private void update() {
         checkBallCollision();
-        for(int i = 0; i < billiards.length; i++){
+        checkWallCollision();
+        for (int i = 0; i < billiards.length; i++) {            
             billiards[i].setXVel(billiards[i].getXVel() * friction);
             billiards[i].setXPosition(billiards[i].getXPosition() + billiards[i].getXVel());
             billiards[i].setYVel(billiards[i].getYVel() * friction);
@@ -33,36 +34,39 @@ public class Pool {
 
     }
 
-    private void init(){
+    private void init() {
         gm = new GameArena(1920, 1080);
 
-        Table table = new Table(startOfCloth, startOfCloth, (900*ratio) , (450*ratio));
-        gm.addRectangle(new Rectangle(50, 50, 900 * ratio + diff*2, 450 * ratio + diff*2, "BROWN"));        
+        Table table = new Table(startOfCloth, startOfCloth, (900 * ratio), (450 * ratio));
+        gm.addRectangle(new Rectangle(50, 50, 900 * ratio + diff * 2, 450 * ratio + diff * 2, "BROWN"));
         gm.addRectangle(table);
 
         pockets = new Pocket[6];
         pockets[0] = new Pocket(startOfCloth, startOfCloth, ratio);
         pockets[1] = new Pocket(endOfClothX, startOfCloth, ratio);
-        pockets[2] = new Pocket((endOfClothX-startOfCloth)/2 + startOfCloth, startOfCloth, ratio);
+        pockets[2] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, startOfCloth, ratio);
         pockets[3] = new Pocket(startOfCloth, endOfClothY, ratio);
         pockets[4] = new Pocket(endOfClothX, endOfClothY, ratio);
-        pockets[5] = new Pocket((endOfClothX-startOfCloth)/2 + startOfCloth, endOfClothY, ratio);
-        for(int i = 0; i < pockets.length; i++){
-            gm.addBall(pockets[i]);
+        pockets[5] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, endOfClothY, ratio);
+        for (Pocket pocket : pockets) {
+            gm.addBall(pocket);
         }
 
-        billiards = new Billiard[3]; 
-        for(int i = 0; i < 3; i++){
-            billiards[i] = new Billiard((i+1) * 200, (i+1) * 200, ratio);
+        billiards = new Billiard[3];
+        for (int i = 0; i < 3; i++) {
+            billiards[i] = new Billiard((i + 1) * 200, (i + 1) * 200, ratio);
             gm.addBall(billiards[i]);
         }
+        try {Thread.sleep(1000);}catch(InterruptedException e) {e.printStackTrace();}
+        billiards[0].setXVel(40);
+        billiards[0].setYVel(39.95);
     }    
 
     private void checkBallCollision(){
-        for(int i = 0; i < billiards.length; i++){
-            for(int j = 0; j < billiards.length; j++){
+        for(Billiard i : billiards){
+            for(Billiard j : billiards){
                 if(i!=j){
-                    if(billiards[i].collides(billiards[j])){
+                    if(i.collides(j)){
                         deflect(i, j);
                     }
                 }
@@ -70,16 +74,16 @@ public class Pool {
         }
     }
 
-    private void deflect(int index1, int index2)
+    private void deflect(Billiard billiard1, Billiard billiard2)
     {        
         // Calculate initial momentum of the balls... We assume unit mass here.
-        double p1InitialMomentum = Math.sqrt(billiards[index1].getXVel() * billiards[index1].getXVel() + billiards[index1].getYVel() * billiards[index1].getYVel());
-        double p2InitialMomentum = Math.sqrt(billiards[index2].getXVel() * billiards[index2].getXVel() + billiards[index2].getYVel() * billiards[index2].getYVel());
+        double p1InitialMomentum = Math.sqrt(billiard1.getXVel() * billiard1.getXVel() + billiard1.getYVel() * billiard1.getYVel());
+        double p2InitialMomentum = Math.sqrt(billiard2.getXVel() * billiard2.getXVel() + billiard2.getYVel() * billiard2.getYVel());
         // calculate motion vectors
-        double[] p1Trajectory = {billiards[index1].getXVel(), billiards[index1].getYVel()};
-        double[] p2Trajectory = {billiards[index2].getXVel(), billiards[index2].getYVel()};
+        double[] p1Trajectory = {billiard1.getXVel(), billiard1.getYVel()};
+        double[] p2Trajectory = {billiard2.getXVel(), billiard2.getYVel()};
         // Calculate Impact Vector
-        double[] impactVector = {billiards[index2].getXPosition() - billiards[index1].getXPosition(), billiards[index2].getYPosition() - billiards[index1].getYPosition()};
+        double[] impactVector = {billiard2.getXPosition() - billiard1.getXPosition(), billiard2.getYPosition() - billiard1.getYPosition()};
         double[] impactVectorNorm = normalizeVector(impactVector);
         // Calculate scalar product of each trajectory and impact vector
         double p1dotImpact = Math.abs(p1Trajectory[0] * impactVectorNorm[0] + p1Trajectory[1] * impactVectorNorm[1]);
@@ -96,10 +100,10 @@ public class Pool {
         // Scale the resultant trajectories if we've accidentally broken the laws of physics.
         double mag = (p1InitialMomentum + p2InitialMomentum) / (p1FinalMomentum + p2FinalMomentum);
         // Calculate the final x and y speed settings for the two balls after collision.
-        billiards[index1].setXVel(p1FinalTrajectory[0] * mag);
-        billiards[index1].setYVel(p1FinalTrajectory[1] * mag);
-        billiards[index2].setXVel(p2FinalTrajectory[0] * mag);
-        billiards[index2].setYVel(p2FinalTrajectory[1] * mag);
+        billiard1.setXVel(p1FinalTrajectory[0] * mag);
+        billiard1.setYVel(p1FinalTrajectory[1] * mag);
+        billiard2.setXVel(p2FinalTrajectory[0] * mag);
+        billiard2.setYVel(p2FinalTrajectory[1] * mag);
     }
 
     private double[] normalizeVector(double[] vec)
@@ -127,16 +131,19 @@ public class Pool {
 
     private void checkWallCollision(){
         for(int i = 0; i < billiards.length; i++){
-            if(billiards[i].getXPosition() >= endOfClothX - billiards[i].getSize()/2){
+            if(billiards[i].getXPosition() + billiards[i].getXVel() >= endOfClothX - billiards[i].getSize()/2){
                 //Bounce off right wall
-            }else if(billiards[i].getXPosition() <= startOfCloth + billiards[i].getSize()/2){
+                billiards[i].setXVel(-billiards[i].getXVel() * friction);
+            }else if(billiards[i].getXPosition() + billiards[i].getXVel() <= startOfCloth + billiards[i].getSize()/2){
                 //Bounce off left wall
-            }else if(billiards[i].getYPosition() >= endOfClothY - billiards[i].getSize()/2){
+                billiards[i].setXVel(-billiards[i].getXVel() * friction);
+            }else if(billiards[i].getYPosition() + billiards[i].getYVel() >= endOfClothY - billiards[i].getSize()/2){
                 //Bounce off bottom wall
-            }else if(billiards[i].getYPosition() <= startOfCloth + billiards[i].getSize()/2){
+                billiards[i].setYVel(-billiards[i].getYVel() * friction);
+            }else if(billiards[i].getYPosition() + billiards[i].getYVel() <= startOfCloth + billiards[i].getSize()/2){
                 //Bounce off top wall
+                billiards[i].setYVel(-billiards[i].getYVel() * friction);
             }
         }
     }
-
 }
