@@ -1,8 +1,11 @@
 package com.killian;
 
 public class Billiard extends Ball{
-    private double xVel, yVel, xAcc, yAcc;
-
+    private double xVel;
+    private double yVel;
+    private double xAcc;
+    private double yAcc;
+    
     public Billiard(double x, double y, double ratio){
         super(x, y, 18.75*ratio, "WHITE");
         this.xVel = 0;
