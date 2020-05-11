@@ -1,5 +1,4 @@
 package com.killian;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.*;
@@ -80,7 +79,7 @@ public class GameArena extends JPanel implements Runnable, KeyListener, MouseLis
 			this.frame = new JFrame();
 			frame.setTitle("Let's Play!");
 			frame.setSize(width, height);
-			frame.setResizable(true);
+			frame.setResizable(false);
 			frame.setBackground(Color.BLACK);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setContentPane(this);
@@ -460,6 +459,16 @@ public class GameArena extends JPanel implements Runnable, KeyListener, MouseLis
 	public void removeText(Text t)
 	{
 		this.removeObject(t);
+	}
+
+	/**
+	 * Removes every object that has ever been added to the GameArena. Nothing
+	 * should appear on the GameArena window after this has executed.
+	 */
+	public void clearGameArena() {
+		synchronized(this) {
+			things.clear();
+		}
 	}
 
 	/**

@@ -77,18 +77,11 @@ public class Line
 	 * Defined the size of the arrowhead on this line, as a proportion to the line's width.
 	 * @param size The new size for the arrowhead on this line.
 	 */
+
 	public void setArrowSize(double size)
 	{
 		arrowSize = size;
 		this.recalculateArrowhead();
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	public void setLayer(int layer){
-		this.layer = layer;
 	}
 
 	/**

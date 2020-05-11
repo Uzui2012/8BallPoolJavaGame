@@ -8,9 +8,14 @@ public class Pool {
     private double endOfClothY;
     private double friction;
 
+    private Text stateFlag;
+
+    private State state;
+    private State lastTurn;
     
     private Billiard[] billiards;
     private Cue cue;
+    private GameArena gm;
 
     public Pool() throws InterruptedException {
         ratio = 1.5;
@@ -18,38 +23,85 @@ public class Pool {
         startOfCloth = 150 + diff;
         endOfClothX = startOfCloth + 900 * ratio;
         endOfClothY = startOfCloth + 450 * ratio;
-        friction = 0.98;
-
+        friction = 0.9825;
+        state = State.PLAYER_1;
+        lastTurn = State.PLAYER_2;
+        this.gm = new GameArena(1920, 1080);
         // Class + Game Arena set up
-        init(new GameArena(1920, 1080));
+        init(gm);
 
         // Game Loop
-        while (true) {
+        while (true){
             update();
+            checkState();
             Thread.sleep(6); // Set FPS
         }
     }
 
-    private void update() {
+    private void update(){
         checkBallCollision();
         checkWallCollision();
-        int countMoving = 0;
-        for (Billiard i : billiards) {            
+        for (Billiard i : billiards){
             i.setXVel(i.getXVel() * friction);
             i.setXPosition(i.getXPosition() + i.getXVel());
             i.setYVel(i.getYVel() * friction);
             i.setYPosition(i.getYPosition() + i.getYVel());
-            if(i.getXVel() == 0 && i.getYVel() == 0){
-                countMoving++;
+        }
+    }
+
+    private void checkState(){
+        if(checkMovement()){
+            this.state = State.BALLS;
+        }else if(lastTurn == State.PLAYER_2){
+            this.state = State.PLAYER_1;
+        }else{
+            this.state = State.PLAYER_2;
+        }
+        if(state == State.BALLS){
+            //CHECK RULES
+        }else{
+            getInput();
+        }
+    }
+    
+    private void getInput(){
+        //Calculate mouse to white ball direction vector
+        double mouseX = gm.getMousePositionX();
+        double mouseY = gm.getMousePositionY();
+        double[] mouseWhiteVec = {mouseX - billiards[0].getXPosition(), -mouseY + billiards[0].getYPosition()}; //{xDir,yDir}
+        double arcTan= Math.atan((mouseWhiteVec[0]/mouseWhiteVec[1]));
+        double theta;
+        if(mouseWhiteVec[0] > 0){
+            if(mouseWhiteVec[1] < 0){ //+, +
+                theta = -arcTan;
+            }else{ //+, -
+                theta = arcTan;
+            }
+        }else{
+            if(mouseWhiteVec[1] < 0){ //-, +
+                theta = Math.PI - arcTan;
+            }else{ //-, -
+                theta = Math.PI - arcTan;
             }
         }
-        if(countMoving == 0 && !cue.getVisibility()){
-            cue.setVisibility(true);
-        }else if(cue.getVisibility()){
-            cue.setVisibility(false);
+        System.out.println(theta + ", VecX: " + mouseWhiteVec[0] + ", VecY: " + mouseWhiteVec[1]);
+        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
+
+    }
+
+    private boolean checkMovement(){
+        boolean flag = true;
+        for(Billiard i : billiards){
+            if(i.getXVel() == 0 && i.getYVel() == 0){
+                cue.setWidth(8);
+                flag = false;
+            }else{
+                cue.setWidth(100);
+                flag = true;
+            }
         }
-        
-    }    
+        return flag;
+    }
 
     private void checkBallCollision(){
         for(Billiard i : billiards){
@@ -81,8 +133,7 @@ public class Pool {
         }
     }
 
-    private void deflect(Billiard billiard1, Billiard billiard2)
-    {        
+    private void deflect(Billiard billiard1, Billiard billiard2){        
         // Calculate initial momentum of the balls... We assume unit mass here.
         double p1InitialMomentum = Math.sqrt(billiard1.getXVel() * billiard1.getXVel() + billiard1.getYVel() * billiard1.getYVel());
         double p2InitialMomentum = Math.sqrt(billiard2.getXVel() * billiard2.getXVel() + billiard2.getYVel() * billiard2.getYVel());
@@ -113,8 +164,7 @@ public class Pool {
         billiard2.setYVel(p2FinalTrajectory[1] * mag);
     }
 
-    private double[] normalizeVector(double[] vec)
-    {
+    private double[] normalizeVector(double[] vec){
         double mag = 0.0;
         int dimensions = vec.length;
         double[] result = new double[dimensions];
@@ -138,7 +188,10 @@ public class Pool {
         return result;
     }
 
-    private void init(GameArena gm) {
+    private void init(GameArena gm){
+        this.stateFlag = new Text("null", 20, endOfClothX + 100,  endOfClothY + 30, "WHITE");
+        this.lastTurn = State.PLAYER_2;
+        state = State.PLAYER_1;
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
         double frontDotY = 450*ratio/2 + startOfCloth;
@@ -153,12 +206,12 @@ public class Pool {
         pockets[3] = new Pocket(startOfCloth, endOfClothY, ratio);
         pockets[4] = new Pocket(endOfClothX, endOfClothY, ratio);
         pockets[5] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, endOfClothY, ratio);
-        for (Pocket pocket : pockets) {
+        for (Pocket pocket : pockets){
             gm.addBall(pocket);
         }
 
         billiards = new Billiard[16];
-        billiards[0] = new Billiard(startOfCloth + 300, startOfCloth + 280, ratio);
+        billiards[0] = new Billiard(startOfCloth + 300, startOfCloth + 310, ratio);
         billiards[1] = new Billiard(frontDotX - 0.5, frontDotY, ratio);
         billiards[2] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY + d*Math.sin(0.523599), ratio);
         billiards[3] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY - d*Math.sin(0.523599), ratio);
@@ -174,16 +227,29 @@ public class Pool {
         billiards[13] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY - d, ratio);
         billiards[14] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY + 2*d, ratio);
         billiards[15] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY - 2*d, ratio);
-        for (Billiard i : billiards) {
-            gm.addBall(i);
+        for (int i = 0; i < 16; i ++){
+            if(i % 2 == 0){
+                billiards[i].setColour("RED");
+            }else{
+                billiards[i].setColour("YELLOW");
+            }
+            billiards[0].setColour("WHITE");
+            billiards[4].setColour("BLACK");
+            gm.addBall(billiards[i]);
         }
 
        this.cue = new Cue(billiards[0].getXPosition(), billiards[0].getYPosition(), ratio);
         gm.addLine(cue);
 
-        try {Thread.sleep(1000);}catch(InterruptedException e) {e.printStackTrace();}
+        //try {Thread.sleep(1000);}catch(InterruptedException e) {e.printStackTrace();}
+        //billiards[0].setXVel(200);
 
-        billiards[0].setXVel(75);
-        billiards[0].setYVel(2);
+    }
+
+    enum State{
+        PLAYER_1,
+        PLAYER_2,
+        BALLS
     }
 }
+
