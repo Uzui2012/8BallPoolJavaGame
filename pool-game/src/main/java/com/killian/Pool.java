@@ -46,21 +46,34 @@ public class Pool {
             i.setXPosition(i.getXPosition() + i.getXVel());
             i.setYVel(i.getYVel() * friction);
             i.setYPosition(i.getYPosition() + i.getYVel());
+            if(i.getXVel()*i.getXVel() < 0.001){
+                i.setXVel(0);
+            }
+            if(i.getYVel()*i.getYVel() < 0.001){
+                i.setYVel(0);
+            }        
         }
     }
 
     private void checkState(){
         if(checkMovement()){
             this.state = State.BALLS;
+            System.out.println("BALLS");
         }else if(lastTurn == State.PLAYER_2){
             this.state = State.PLAYER_1;
+            System.out.println("1");
         }else{
             this.state = State.PLAYER_2;
+            System.out.println("2");
         }
+
+
         if(state == State.BALLS){
             //CHECK RULES
+            System.out.println("BALLS MOVING");
         }else{
-            getInput();
+            getInput();                        
+            System.out.println("GETTING CUE");
         }
     }
     
@@ -68,37 +81,37 @@ public class Pool {
         //Calculate mouse to white ball direction vector
         double mouseX = gm.getMousePositionX();
         double mouseY = gm.getMousePositionY();
-        double[] mouseWhiteVec = {mouseX - billiards[0].getXPosition(), -mouseY + billiards[0].getYPosition()}; //{xDir,yDir}
-        double arcTan= Math.atan((mouseWhiteVec[0]/mouseWhiteVec[1]));
+        double[] mouseWhiteVec = {mouseX - billiards[0].getXPosition(), billiards[0].getYPosition() - mouseY}; //{xDir,yDir}
+        double arcTan= Math.atan(mouseWhiteVec[1]/mouseWhiteVec[0]);
         double theta;
         if(mouseWhiteVec[0] > 0){
-            if(mouseWhiteVec[1] < 0){ //+, +
-                theta = -arcTan;
-            }else{ //+, -
-                theta = arcTan;
-            }
+            theta = -arcTan;
         }else{
-            if(mouseWhiteVec[1] < 0){ //-, +
-                theta = Math.PI - arcTan;
-            }else{ //-, -
-                theta = Math.PI - arcTan;
-            }
+            theta = Math.PI - arcTan;
         }
-        System.out.println(theta + ", VecX: " + mouseWhiteVec[0] + ", VecY: " + mouseWhiteVec[1]);
+        //Set cue rotation to mouse to white ball direciton vector
         cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
 
+        double power = 50;
+        if(gm.leftMousePressed()){
+            billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
+            billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
+        }
     }
 
     private boolean checkMovement(){
         boolean flag = true;
         for(Billiard i : billiards){
-            if(i.getXVel() == 0 && i.getYVel() == 0){
-                cue.setWidth(8);
+            if(i.getXVel() != 0 || i.getYVel() != 0){
+                cue.setVisibiity(false);
+                flag = true;
+                cue.setVisibiity(true);
                 flag = false;
             }else{
-                cue.setWidth(100);
-                flag = true;
+                cue.setVisibiity(true);
+                flag = false;
             }
+            System.err.println(i.getXVel() + ", " + i.getYVel());
         }
         return flag;
     }
@@ -238,7 +251,7 @@ public class Pool {
             gm.addBall(billiards[i]);
         }
 
-       this.cue = new Cue(billiards[0].getXPosition(), billiards[0].getYPosition(), ratio);
+        this.cue = new Cue(billiards[0].getXPosition(), billiards[0].getYPosition(), ratio);
         gm.addLine(cue);
 
         //try {Thread.sleep(1000);}catch(InterruptedException e) {e.printStackTrace();}

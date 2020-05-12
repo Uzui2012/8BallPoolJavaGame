@@ -2,7 +2,10 @@ package com.killian;
 
 public class Cue extends Line
 {
-    private double theta, distance, length, ballRad;
+    private double theta;
+    private double distance;
+    private double length;
+    private double ballRad;
     private boolean visible;
 
     public Cue(double whiteX, double whiteY, double ratio){
@@ -20,6 +23,17 @@ public class Cue extends Line
         setLinePosition((ballRad + distance) * Math.cos(theta) + whiteX, (ballRad + distance) * Math.sin(theta) + whiteY, (ballRad + distance + length) * Math.cos(theta) + whiteX, (ballRad + distance + length) * Math.sin(theta) + whiteY);
     }
 
-    
+    public double getTheta(){
+        return this.theta;
+    }
+
+    public void setVisibiity(boolean flag){
+        this.visible = flag;
+        if(!flag){
+            this.setWidth(0);
+        }else{
+            this.setWidth(8);
+        }
+    }
 }
 
