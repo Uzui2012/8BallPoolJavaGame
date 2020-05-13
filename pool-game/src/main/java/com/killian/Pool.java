@@ -8,24 +8,25 @@ public class Pool {
     private double endOfClothY;
     private double friction;
 
-    private Text stateFlag;
-
-    private State state;
-    private State lastTurn;
+    private boolean movement; //TRUE BALLS FALSE PLAYER
+    private Player[] players;
+    private int playerPointer;
     
     private Billiard[] billiards;
     private Cue cue;
     private GameArena gm;
 
     public Pool() throws InterruptedException {
-        ratio = 1.5;
-        diff = 30 * ratio;
-        startOfCloth = 150 + diff;
-        endOfClothX = startOfCloth + 900 * ratio;
-        endOfClothY = startOfCloth + 450 * ratio;
-        friction = 0.9825;
-        state = State.PLAYER_1;
-        lastTurn = State.PLAYER_2;
+        this.ratio = 1.5;
+        this.diff = 30 * ratio;
+        this.startOfCloth = 150 + diff;
+        this.endOfClothX = startOfCloth + 900 * ratio;
+        this.endOfClothY = startOfCloth + 450 * ratio;
+        this.friction = 0.9825;
+        this.movement = false;
+        this.players = new Player[2]; //index 0: Player 1
+                                      //index 1: Player 2
+        this.playerPointer = 0;
         this.gm = new GameArena(1920, 1080);
         // Class + Game Arena set up
         init(gm);
@@ -57,22 +58,20 @@ public class Pool {
 
     private void checkState(){
         if(checkMovement()){
-            this.state = State.BALLS;
+            movement = true;
             System.out.println("BALLS");
-        }else if(lastTurn == State.PLAYER_2){
-            this.state = State.PLAYER_1;
-            System.out.println("1");
         }else{
-            this.state = State.PLAYER_2;
-            System.out.println("2");
+            movement = false;
+            System.out.println("PLAYER");
         }
 
-
-        if(state == State.BALLS){
+        if(movement){
             //CHECK RULES
+            cue.setVisibiity(false);
             System.out.println("BALLS MOVING");
         }else{
-            getInput();                        
+            cue.setVisibiity(true);
+            getInput();
             System.out.println("GETTING CUE");
         }
     }
@@ -92,7 +91,7 @@ public class Pool {
         //Set cue rotation to mouse to white ball direciton vector
         cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
 
-        double power = 50;
+        double power = 25;
         if(gm.leftMousePressed()){
             billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
@@ -100,19 +99,18 @@ public class Pool {
     }
 
     private boolean checkMovement(){
-        boolean flag = true;
+        boolean flag = false; //FALSE == NON ARE MOVING
+        
         for(Billiard i : billiards){
-            if(i.getXVel() != 0 || i.getYVel() != 0){
-                cue.setVisibiity(false);
-                flag = true;
-                cue.setVisibiity(true);
+            System.err.println(i.getXVel() + ", " + i.getYVel());
+            if(i.getXVel() == 0 && i.getYVel() == 0){
                 flag = false;
             }else{
-                cue.setVisibiity(true);
-                flag = false;
+                flag = true;
+                break;
             }
-            System.err.println(i.getXVel() + ", " + i.getYVel());
         }
+        System.out.println(flag);
         return flag;
     }
 
@@ -202,9 +200,8 @@ public class Pool {
     }
 
     private void init(GameArena gm){
-        this.stateFlag = new Text("null", 20, endOfClothX + 100,  endOfClothY + 30, "WHITE");
-        this.lastTurn = State.PLAYER_2;
-        state = State.PLAYER_1;
+        players[0] = new Player();
+        players[1] = new Player();
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
         double frontDotY = 450*ratio/2 + startOfCloth;
@@ -256,7 +253,6 @@ public class Pool {
 
         //try {Thread.sleep(1000);}catch(InterruptedException e) {e.printStackTrace();}
         //billiards[0].setXVel(200);
-
     }
 
     enum State{
