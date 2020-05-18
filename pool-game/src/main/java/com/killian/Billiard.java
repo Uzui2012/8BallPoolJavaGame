@@ -1,7 +1,5 @@
 package com.killian;
 
-import java.util.List;
-
 public class Billiard extends Ball {
     private double xVel;
     private double yVel;
@@ -18,6 +16,7 @@ public class Billiard extends Ball {
         this.yAcc = 0;
         this.pocketed = false;
         this.firstHit = false;
+
     }
 
     public void setFirstHit(boolean flag){
@@ -64,9 +63,7 @@ public class Billiard extends Ball {
         return this.pocketed;
     }
 
-    public void pocketed(){
-        this.setXPosition(1900);
-        this.setYPosition(1000);
+    public void pocketed(State state){
         this.xVel = 0;
         this.yVel = 0;
         this.pocketed = true;

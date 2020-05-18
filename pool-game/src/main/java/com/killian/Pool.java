@@ -1,8 +1,5 @@
 package com.killian;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Pool 
 {
     private double ratio;
@@ -12,15 +9,10 @@ public class Pool
     private double endOfClothY;
     private double friction;
     
-    private boolean movement;
-    private Player[] players;
-    private int playerIndex;
     private State state;
-    private boolean whiteUnhit;
-    private int firstHit;
-    
+
     private Pocket[] pockets;
-    private List<Integer> pocketedBalls;
+    private Player[] players;
     private Billiard[] billiards;
     private Cue cue;
     private GameArena gm;
@@ -32,12 +24,9 @@ public class Pool
         this.endOfClothX = startOfCloth + 900 * ratio;
         this.endOfClothY = startOfCloth + 450 * ratio;
         this.friction = 0.9825;
-        this.movement = false;
+        this.state = new State(Stage.PLAYER, 0, 0, false, false);
         this.players = new Player[2]; //index 0: Player 1
                                       //index 1: Player 2
-
-        this.playerIndex = 0;
-        this.pocketedBalls = new ArrayList<Integer>();
         this.gm = new GameArena(1920, 1080);
         // Class + Game Arena set up
         init(gm);
@@ -50,30 +39,37 @@ public class Pool
     }
 
     private void update(){
-        switch(this.state){
+        switch(this.state.getStage()){
             case PLAYER:
                 getInput();
                 break;
             case MOVEMENT:
                 moveBalls();
                 if(!checkMovement()){
-                    state = State.CALCULATE_RULES;
+                    this.state.setStage(Stage.CALCULATE_RULES);
                 }
                 break;
             case CALCULATE_RULES:
-                implRules();
+                calcRules();
                 break;
         }      
     }
 
-    private void implRules(){
-        if(!pocketedBalls.isEmpty()){
-            
+    private void calcRules(){
+        if(!this.state.getPocketedBalls().isEmpty()){//IF NOT EMPTY
+            if(this.state.getFirstHit() != 0 && billiards[this.state.getFirstHit()].getColour() != players[this.state.getPlayerIndex()].getColour().toString()){
+                    this.state.getPocketedBalls().remove(this.state.getPocketedBalls().indexOf(0));
+                    for(int i = 0; i < this.state.getPocketedBalls().size(); i++){
+                        this.state.getPocketedFinal().add(this.state.getPocketedBalls().get(i));
+                    }
+                    players[this.state.getPlayerIndex()].changePlayer(this.state.getPlayerIndex(), cue);
+            }
+        }else{
+
         }
-        this.state = State.PLAYER;
-        this.whiteUnhit = true;
-        this.firstHit = 0; 
-        System.out.println(pocketedBalls.toString());
+        this.state.setStage(Stage.PLAYER);
+        this.state.setWhiteHit(false);
+        this.state.setFirstHit(0);
     }
 
     private void checkPocketed(){
@@ -83,7 +79,7 @@ public class Pool
 		        double dy = b.getYPosition() - p.getYPosition();
 		        double distance = Math.sqrt(dx*dx+dy*dy);
                 if(distance < p.getSize()){
-                    b.pocketed();
+                    b.pocketed(this.state);
                 }
             }
         }
@@ -109,36 +105,36 @@ public class Pool
     }
 
     private void moveLogic(){
-        if(whiteUnhit){
+        if(!this.state.getWhiteHit()){
             int i = 0;
             for(Billiard b : billiards){
                 if(billiards[0].collides(b)){
-                    whiteUnhit = false;
-                    firstHit = i;
+                    this.state.setWhiteHit(true);;
+                    this.state.setFirstHit(i);
                 }
                 i++;
             }
         }
         for(int i = 0; i < billiards.length; i++){
-            if(billiards[i].getPocketed() && !pocketedBalls.contains(i)){
-                pocketedBalls.add(i);
+            if(billiards[i].getPocketed() && !this.state.getPocketedBalls().contains(i)){
+                this.state.getPocketedBalls().add(i);
             }
         }
     }
 
-    private State checkState(){
+    private Stage checkStage(){
         if(checkMovement()){
-            movement = true;
+            this.state.setMovement(true);
         }else{
-            movement = false;
+            this.state.setMovement(false);
         }
 
-        if(movement){
+        if(this.state.getMovement()){
             //CHECK RULES
             cue.setVisibiity(false);
         }else{
             cue.setVisibiity(true);
-            if(playerIndex == 0){
+            if(this.state.getPlayerIndex() == 0){
                 cue.setColour("RED");
             }else{
                 cue.setColour("YELLOW");
@@ -167,13 +163,13 @@ public class Pool
         if(gm.leftMousePressed()){
             billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
-            whiteUnhit = true;
-            this.state = State.MOVEMENT;
+            this.state.setWhiteHit(false);
+            this.state.setStage(Stage.MOVEMENT);
         }
     }
 
     private boolean checkMovement(){
-        boolean flag = false; //FALSE == NON ARE MOVING
+        boolean flag = false;
         for(Billiard i : billiards){
             if(i.getXVel() == 0 && i.getYVel() == 0){
                 flag = false;
@@ -193,10 +189,10 @@ public class Pool
                 }                
             }
         }
-        if(whiteUnhit){
+        if(!this.state.getWhiteHit()){
             for(Billiard b: billiards){
                 if(billiards[0].collides(b) && !billiards[0].equals(b)){
-                    whiteUnhit = false;
+                    this.state.setWhiteHit(true);
                     b.setFirstHit(true);
                 }
             }
@@ -277,10 +273,9 @@ public class Pool
     }
 
     private void init(GameArena gm){
-        players[0] = new Player();
-        players[1] = new Player();
-        this.state = State.PLAYER;
-        this.firstHit = 0;
+        players[0] = new Player(0);
+        players[1] = new Player(1);
+        
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
         double frontDotY = 450*ratio/2 + startOfCloth;
