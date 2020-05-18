@@ -13,7 +13,7 @@ public class Cue extends Line
         this.distance = 20;
         this.length = 600;
         this.ballRad = 18.75*ratio;
-        setCue(3.1416, whiteX, whiteY);
+        setCue(3.1416, whiteX, whiteY);        
     }
 
     public void setCue(double newTheta, double whiteX, double whiteY){
@@ -31,6 +31,10 @@ public class Cue extends Line
     public void setVisibiity(boolean flag){
         if(!flag){
             this.setWidth(0);
+            setLinePosition((ballRad + distance) * Math.cos(theta) + 0,
+                        (ballRad + distance) * Math.sin(theta) + 0,
+                        (ballRad + distance + 0) * Math.cos(theta) + 0,
+                        (ballRad + distance + 0) * Math.sin(theta) + 0);
         }else{
             this.setWidth(8);
         }

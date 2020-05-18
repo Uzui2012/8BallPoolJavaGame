@@ -142,6 +142,17 @@ public class Line
 	}
 
 	/**
+	 * Defines the colour of this line.
+	 * @param col The new colour of this line, Permissable colours are:
+	 * BLACK, BLUE, CYAN, DARKGREY, GREY,
+	 * GREEN, DARKGREEN, LIGHTGREY, MAGENTA, ORANGE,
+	 * PINK, RED, WHITE, YELLOW, BROWN
+	 */
+	public void setColour(String col){
+		this.colour = col;
+	}
+
+	/**
 	 * Obtains the layer of this Line.
 	 * @return the layer of this Line.
 	 */

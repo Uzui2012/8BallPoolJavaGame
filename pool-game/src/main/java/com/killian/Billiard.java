@@ -1,18 +1,22 @@
 package com.killian;
 
-public class Billiard extends Ball{
+import java.util.List;
+
+public class Billiard extends Ball {
     private double xVel;
     private double yVel;
     private double xAcc;
     private double yAcc;
     private boolean firstHit;
+    private boolean pocketed;
     
-    public Billiard(double x, double y, double ratio){
-        super(x, y, 18.75*ratio, "WHITE");
+    public Billiard(double x, double y, double ratio, String col, int index){
+        super(x, y, 18.75*ratio, col);
         this.xVel = 0;
         this.yVel = 0;
         this.xAcc = 0;
         this.yAcc = 0;
+        this.pocketed = false;
         this.firstHit = false;
     }
 
@@ -55,4 +59,17 @@ public class Billiard extends Ball{
     public double getYAcc(){
         return this.yAcc;
     }
+
+    public boolean getPocketed(){
+        return this.pocketed;
+    }
+
+    public void pocketed(){
+        this.setXPosition(1900);
+        this.setYPosition(1000);
+        this.xVel = 0;
+        this.yVel = 0;
+        this.pocketed = true;
+    }
+
 }

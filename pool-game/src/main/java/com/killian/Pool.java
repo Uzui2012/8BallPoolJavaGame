@@ -1,23 +1,32 @@
 package com.killian;
 
-public class Pool {
+import java.util.ArrayList;
+import java.util.List;
+
+public class Pool 
+{
     private double ratio;
     private double diff;
     private double startOfCloth;
     private double endOfClothX;
     private double endOfClothY;
     private double friction;
-
-    private boolean movement; //TRUE BALLS FALSE PLAYER
-    private Player[] players;
-    private int playerPointer;
     
+    private boolean movement;
+    private Player[] players;
+    private int playerIndex;
+    private State state;
+    private boolean whiteUnhit;
+    private int firstHit;
+    
+    private Pocket[] pockets;
+    private List<Integer> pocketedBalls;
     private Billiard[] billiards;
     private Cue cue;
     private GameArena gm;
 
     public Pool() throws InterruptedException {
-        this.ratio = 1.5;
+        this.ratio = 1.6;
         this.diff = 30 * ratio;
         this.startOfCloth = 150 + diff;
         this.endOfClothX = startOfCloth + 900 * ratio;
@@ -26,7 +35,9 @@ public class Pool {
         this.movement = false;
         this.players = new Player[2]; //index 0: Player 1
                                       //index 1: Player 2
-        this.playerPointer = 0;
+
+        this.playerIndex = 0;
+        this.pocketedBalls = new ArrayList<Integer>();
         this.gm = new GameArena(1920, 1080);
         // Class + Game Arena set up
         init(gm);
@@ -34,12 +45,51 @@ public class Pool {
         // Game Loop
         while (true){
             update();
-            checkState();
             Thread.sleep(6); // Set FPS
         }
     }
 
     private void update(){
+        switch(this.state){
+            case PLAYER:
+                getInput();
+                break;
+            case MOVEMENT:
+                moveBalls();
+                if(!checkMovement()){
+                    state = State.CALCULATE_RULES;
+                }
+                break;
+            case CALCULATE_RULES:
+                implRules();
+                break;
+        }      
+    }
+
+    private void implRules(){
+        if(!pocketedBalls.isEmpty()){
+            
+        }
+        this.state = State.PLAYER;
+        this.whiteUnhit = true;
+        this.firstHit = 0; 
+        System.out.println(pocketedBalls.toString());
+    }
+
+    private void checkPocketed(){
+        for(Billiard b : billiards){
+            for(Pocket p : pockets){
+                double dx = b.getXPosition() - p.getXPosition();
+		        double dy = b.getYPosition() - p.getYPosition();
+		        double distance = Math.sqrt(dx*dx+dy*dy);
+                if(distance < p.getSize()){
+                    b.pocketed();
+                }
+            }
+        }
+    }
+
+    private void moveBalls(){
         checkBallCollision();
         checkWallCollision();
         for (Billiard i : billiards){
@@ -52,28 +102,50 @@ public class Pool {
             }
             if(i.getYVel()*i.getYVel() < 0.001){
                 i.setYVel(0);
-            }        
+            }
+        }
+        checkPocketed();
+        moveLogic();
+    }
+
+    private void moveLogic(){
+        if(whiteUnhit){
+            int i = 0;
+            for(Billiard b : billiards){
+                if(billiards[0].collides(b)){
+                    whiteUnhit = false;
+                    firstHit = i;
+                }
+                i++;
+            }
+        }
+        for(int i = 0; i < billiards.length; i++){
+            if(billiards[i].getPocketed() && !pocketedBalls.contains(i)){
+                pocketedBalls.add(i);
+            }
         }
     }
 
-    private void checkState(){
+    private State checkState(){
         if(checkMovement()){
             movement = true;
-            System.out.println("BALLS");
         }else{
             movement = false;
-            System.out.println("PLAYER");
         }
 
         if(movement){
             //CHECK RULES
             cue.setVisibiity(false);
-            System.out.println("BALLS MOVING");
         }else{
             cue.setVisibiity(true);
+            if(playerIndex == 0){
+                cue.setColour("RED");
+            }else{
+                cue.setColour("YELLOW");
+            }
             getInput();
-            System.out.println("GETTING CUE");
         }
+        return null;
     }
     
     private void getInput(){
@@ -91,18 +163,18 @@ public class Pool {
         //Set cue rotation to mouse to white ball direciton vector
         cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
 
-        double power = 25;
+        double power = 15*ratio;
         if(gm.leftMousePressed()){
             billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
+            whiteUnhit = true;
+            this.state = State.MOVEMENT;
         }
     }
 
     private boolean checkMovement(){
         boolean flag = false; //FALSE == NON ARE MOVING
-        
         for(Billiard i : billiards){
-            System.err.println(i.getXVel() + ", " + i.getYVel());
             if(i.getXVel() == 0 && i.getYVel() == 0){
                 flag = false;
             }else{
@@ -110,17 +182,22 @@ public class Pool {
                 break;
             }
         }
-        System.out.println(flag);
         return flag;
     }
 
     private void checkBallCollision(){
         for(Billiard i : billiards){
             for(Billiard j : billiards){
-                if(i!=j){
-                    if(i.collides(j)){
+                if(!i.equals(j) && i.collides(j)){
                         deflect(i, j);
-                    }
+                }                
+            }
+        }
+        if(whiteUnhit){
+            for(Billiard b: billiards){
+                if(billiards[0].collides(b) && !billiards[0].equals(b)){
+                    whiteUnhit = false;
+                    b.setFirstHit(true);
                 }
             }
         }
@@ -202,6 +279,8 @@ public class Pool {
     private void init(GameArena gm){
         players[0] = new Player();
         players[1] = new Player();
+        this.state = State.PLAYER;
+        this.firstHit = 0;
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
         double frontDotY = 450*ratio/2 + startOfCloth;
@@ -209,56 +288,40 @@ public class Pool {
         gm.addRectangle(new Rectangle(150, 150, 900 * ratio + diff * 2, 450 * ratio + diff * 2, "BROWN"));
         gm.addRectangle(table);
 
-        Pocket[] pockets = new Pocket[6];
+        pockets = new Pocket[6];
         pockets[0] = new Pocket(startOfCloth, startOfCloth, ratio);
         pockets[1] = new Pocket(endOfClothX, startOfCloth, ratio);
-        pockets[2] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, startOfCloth, ratio);
+        pockets[2] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, startOfCloth - 10, ratio);
         pockets[3] = new Pocket(startOfCloth, endOfClothY, ratio);
         pockets[4] = new Pocket(endOfClothX, endOfClothY, ratio);
-        pockets[5] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, endOfClothY, ratio);
+        pockets[5] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, endOfClothY + 10, ratio);
         for (Pocket pocket : pockets){
             gm.addBall(pocket);
         }
 
         billiards = new Billiard[16];
-        billiards[0] = new Billiard(startOfCloth + 300, startOfCloth + 310, ratio);
-        billiards[1] = new Billiard(frontDotX - 0.5, frontDotY, ratio);
-        billiards[2] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY + d*Math.sin(0.523599), ratio);
-        billiards[3] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY - d*Math.sin(0.523599), ratio);
-        billiards[4] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY, ratio);
-        billiards[5] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY + d, ratio);
-        billiards[6] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY - d, ratio);
-        billiards[7] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1 , frontDotY + d*Math.sin(0.523599), ratio);
-        billiards[8] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY - d*Math.sin(0.523599), ratio);
-        billiards[9] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY + d*Math.sin(0.523599) + d, ratio);
-        billiards[10] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY - d*Math.sin(0.523599) - d, ratio);
-        billiards[11] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY, ratio);
-        billiards[12] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY + d, ratio);
-        billiards[13] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY - d, ratio);
-        billiards[14] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY + 2*d, ratio);
-        billiards[15] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY - 2*d, ratio);
+        billiards[0] = new Billiard(startOfCloth + 300, startOfCloth + 310, ratio, "WHITE", 0);
+        billiards[1] = new Billiard(frontDotX - 0.5, frontDotY, ratio, "RED", 1);
+        billiards[2] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY + d*Math.sin(0.523599), ratio, "YELLOW", 2);
+        billiards[3] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY - d*Math.sin(0.523599), ratio, "RED", 3);
+        billiards[4] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY, ratio, "BLACK", 4);
+        billiards[5] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY + d, ratio, "RED", 5);
+        billiards[6] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY - d, ratio, "YELLOW", 6);
+        billiards[7] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1 , frontDotY + d*Math.sin(0.523599), ratio, "RED", 7);
+        billiards[8] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY - d*Math.sin(0.523599), ratio, "YELLOW", 8);
+        billiards[9] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY + d*Math.sin(0.523599) + d, ratio, "YELLOW", 9);
+        billiards[10] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY - d*Math.sin(0.523599) - d, ratio, "RED", 10);
+        billiards[11] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY, ratio, "RED", 11);
+        billiards[12] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY + d, ratio, "YELLOW", 12);
+        billiards[13] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY - d, ratio, "YELLOW", 13);
+        billiards[14] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY + 2*d, ratio, "RED", 14);
+        billiards[15] = new Billiard(frontDotX + 4*d*Math.cos(0.523599) + 1.5, frontDotY - 2*d, ratio, "YELLOW", 15);
         for (int i = 0; i < 16; i ++){
-            if(i % 2 == 0){
-                billiards[i].setColour("RED");
-            }else{
-                billiards[i].setColour("YELLOW");
-            }
-            billiards[0].setColour("WHITE");
-            billiards[4].setColour("BLACK");
             gm.addBall(billiards[i]);
         }
 
         this.cue = new Cue(billiards[0].getXPosition(), billiards[0].getYPosition(), ratio);
         gm.addLine(cue);
-
-        //try {Thread.sleep(1000);}catch(InterruptedException e) {e.printStackTrace();}
-        //billiards[0].setXVel(200);
-    }
-
-    enum State{
-        PLAYER_1,
-        PLAYER_2,
-        BALLS
     }
 }
 
