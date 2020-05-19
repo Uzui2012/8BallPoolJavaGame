@@ -2,15 +2,14 @@ package com.killian;
 
 public class Pool 
 {
-    private double ratio;
-    private double diff;
-    private double startOfCloth;
-    private double endOfClothX;
-    private double endOfClothY;
-    private double friction;
+    private final double ratio;
+    private final double diff;
+    private final double startOfCloth;
+    private final double endOfClothX;
+    private final double endOfClothY;
+    private final double friction;
     
     private State state;
-
     private Pocket[] pockets;
     private Player[] players;
     private Billiard[] billiards;
@@ -24,10 +23,12 @@ public class Pool
         this.endOfClothX = startOfCloth + 900 * ratio;
         this.endOfClothY = startOfCloth + 450 * ratio;
         this.friction = 0.9825;
-        this.state = new State(Stage.PLAYER, 0, 0, false, false);
+
+        this.state = new State();
         this.players = new Player[2]; //index 0: Player 1
                                       //index 1: Player 2
         this.gm = new GameArena(1920, 1080);
+
         // Class + Game Arena set up
         init(gm);
 
@@ -56,30 +57,42 @@ public class Pool
     }
 
     private void calcRules(){
+        if(this.state.getBreak()){
+            //Break rules
+
+        }
+
+        
         if(!this.state.getPocketedBalls().isEmpty()){//IF NOT EMPTY
             if(this.state.getFirstHit() != 0 && billiards[this.state.getFirstHit()].getColour() != players[this.state.getPlayerIndex()].getColour().toString()){
                     this.state.getPocketedBalls().remove(this.state.getPocketedBalls().indexOf(0));
-                    for(int i = 0; i < this.state.getPocketedBalls().size(); i++){
-                        this.state.getPocketedFinal().add(this.state.getPocketedBalls().get(i));
-                    }
-                    players[this.state.getPlayerIndex()].changePlayer(this.state.getPlayerIndex(), cue);
+                    players[this.state.getPlayerIndex()].changePlayer(this.state.getPlayerIndex());
             }
         }else{
 
         }
+
+        //Reset
         this.state.setStage(Stage.PLAYER);
         this.state.setWhiteHit(false);
         this.state.setFirstHit(0);
+        this.state.getPocketedBalls().clear();
+
+        System.out.println(this.state.getPocketedFinal());
+        System.out.println(this.state.getPocketedBalls());
+        System.out.println("Player; " + (this.state.getPlayerIndex()+1));
     }
 
     private void checkPocketed(){
-        for(Billiard b : billiards){
+        for(int i = 0; i < billiards.length; i++){
             for(Pocket p : pockets){
-                double dx = b.getXPosition() - p.getXPosition();
-		        double dy = b.getYPosition() - p.getYPosition();
+                double dx = billiards[i].getXPosition() - p.getXPosition();
+		        double dy = billiards[i].getYPosition() - p.getYPosition();
 		        double distance = Math.sqrt(dx*dx+dy*dy);
                 if(distance < p.getSize()){
-                    b.pocketed(this.state);
+                    billiards[i].pocketed(this.state, i);
+                    billiards[i].setXPosition(endOfClothX + 60*ratio);
+                    billiards[i].setYPosition(startOfCloth + billiards[i].getSize()*(this.state.getPocketedFinal().size()-1));
                 }
             }
         }
@@ -120,28 +133,6 @@ public class Pool
                 this.state.getPocketedBalls().add(i);
             }
         }
-    }
-
-    private Stage checkStage(){
-        if(checkMovement()){
-            this.state.setMovement(true);
-        }else{
-            this.state.setMovement(false);
-        }
-
-        if(this.state.getMovement()){
-            //CHECK RULES
-            cue.setVisibiity(false);
-        }else{
-            cue.setVisibiity(true);
-            if(this.state.getPlayerIndex() == 0){
-                cue.setColour("RED");
-            }else{
-                cue.setColour("YELLOW");
-            }
-            getInput();
-        }
-        return null;
     }
     
     private void getInput(){
@@ -293,6 +284,9 @@ public class Pool
         for (Pocket pocket : pockets){
             gm.addBall(pocket);
         }
+
+        Line baulkLine = new Line(startOfCloth + 210*ratio, startOfCloth, startOfCloth + 210*ratio, endOfClothY, 5, "WHITE");
+        gm.addLine(baulkLine);
 
         billiards = new Billiard[16];
         billiards[0] = new Billiard(startOfCloth + 300, startOfCloth + 310, ratio, "WHITE", 0);

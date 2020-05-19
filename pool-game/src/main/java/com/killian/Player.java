@@ -18,7 +18,7 @@ public class Player
         this.colour = col;
     }
 
-    public void changePlayer(int currentIndex, Cue cue){
+    public void changePlayer(int currentIndex){
         if(this.index == 0){
             currentIndex = 1;
         }else{

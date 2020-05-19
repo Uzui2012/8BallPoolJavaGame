@@ -63,10 +63,12 @@ public class Billiard extends Ball {
         return this.pocketed;
     }
 
-    public void pocketed(State state){
+    public void pocketed(State state, int index){
         this.xVel = 0;
         this.yVel = 0;
         this.pocketed = true;
+        state.getPocketedFinal().add(index);
+        state.getPocketedBalls().add(index);
     }
 
 }
