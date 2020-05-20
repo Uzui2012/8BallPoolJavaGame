@@ -15,6 +15,8 @@ public class Pool extends WindowAdapter
     private final Line baulkLine;
     
     private State state;
+    private double power;
+    private Rectangle powerBar;
     private Pocket[] pockets;
     private Player[] players;
     private Billiard[] billiards;
@@ -339,7 +341,6 @@ public class Pool extends WindowAdapter
         checkBallCollision();
         checkWallCollision();        
         checkPocketed();
-        moveLogic();
         for (Billiard i : billiards){
             if(!i.getPocketed()){
                 i.setXVel(i.getXVel() * friction);
@@ -356,19 +357,6 @@ public class Pool extends WindowAdapter
             //System.out.println(i.getIndex() + ", xPos" + i.getXPosition() + ", yPos:" + i.getYPosition() + ", xVel" + i.getXVel() + ", yVel:" + i.getYVel());
         }
     }
-
-    private void moveLogic(){
-        if(this.state.getWhiteHit()){
-            int i = 0;
-            for(Billiard b : billiards){
-                if(billiards[0].collides(b) && i != 0){
-                    this.state.setWhiteHit(false);
-                    this.state.setFirstHit(i);
-                }
-                i++;
-            }
-        }
-    }
     
     private void getInput(){
         //Calculate mouse to white ball direction vector
@@ -383,12 +371,7 @@ public class Pool extends WindowAdapter
             theta = Math.PI - arcTan;
         }
         //Set cue rotation to mouse to white ball direciton vector
-        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
-
-        Rectangle powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 500, 30, "WHITE");
-        
-        gm.addRectangle(powerBar);
-        double power = 60*ratio;
+        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());       
 
         if(gm.leftMousePressed()){
             System.out.println("SHOT TAKEN");
@@ -396,14 +379,14 @@ public class Pool extends WindowAdapter
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
             this.state.setWhiteHit(false);
             this.state.setStage(Stage.MOVEMENT);
-        }else if(gm.upPressed()){
-        
-        }else if(gm.downPressed()){
-            
-            powerBar.setWidth(powerBar.getWidth() - 20);
-            
+        }else if(gm.upPressed() && power <= 60){
+            this.powerBar.setWidth(powerBar.getWidth() + 1);
+            power++;
+        }else if(gm.downPressed() && power > 1){
+            this.powerBar.setWidth(powerBar.getWidth() - 1);
+            power--;                        
         }
-
+        System.out.println(power);
     }
 
     private void getCueBallInHand() throws InterruptedException{
@@ -466,6 +449,7 @@ public class Pool extends WindowAdapter
                 if(billiards[0].collides(b) && b.getIndex() != 0){
                     this.state.setWhiteHit(true);
                     b.setFirstHit(true);
+                    this.state.setFirstHit(b.getIndex());
                 }
             }
         }
@@ -595,6 +579,7 @@ public class Pool extends WindowAdapter
     private void init(GameArena gm){
         players[0] = new Player(0);
         players[1] = new Player(1);
+        power = 60;
         
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
@@ -602,6 +587,9 @@ public class Pool extends WindowAdapter
         Table table = new Table(startOfCloth, startOfCloth, 900 * ratio, 450 * ratio);
         gm.addRectangle(new Rectangle(150, 150, 900 * ratio + diff * 2, 450 * ratio + diff * 2, "BROWN"));
         gm.addRectangle(table);
+
+        powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 500, 30, "WHITE");        
+        gm.addRectangle(powerBar);
 
         pockets = new Pocket[6];
         pockets[0] = new Pocket(startOfCloth, startOfCloth, ratio);
