@@ -1,6 +1,10 @@
 package com.killian;
 
-public class Pool 
+import javax.swing.JOptionPane;
+
+import java.awt.event.*;
+
+public class Pool extends WindowAdapter
 {
     private final double ratio;
     private final double diff;
@@ -8,6 +12,7 @@ public class Pool
     private final double endOfClothX;
     private final double endOfClothY;
     private final double friction;
+    private final Line baulkLine;
     
     private State state;
     private Pocket[] pockets;
@@ -16,13 +21,14 @@ public class Pool
     private Cue cue;
     private GameArena gm;
 
-    public Pool() throws InterruptedException {
+    public Pool() throws InterruptedException{
         this.ratio = 1.6;
         this.diff = 30 * ratio;
         this.startOfCloth = 150 + diff;
         this.endOfClothX = startOfCloth + 900 * ratio;
         this.endOfClothY = startOfCloth + 450 * ratio;
         this.friction = 0.9825;
+        this.baulkLine = new Line(startOfCloth + 210*ratio, startOfCloth, startOfCloth + 210*ratio, endOfClothY, 5, "WHITE");
 
         this.state = new State();
         this.players = new Player[2]; //index 0: Player 1
@@ -39,8 +45,14 @@ public class Pool
         }
     }
 
-    private void update(){
+    private void update() throws InterruptedException{
         switch(this.state.getStage()){
+            case INKITCHEN:
+                getCueBallInKitchen();
+                break;
+            case INHAND:
+                getCueBallInHand();
+                break;
             case PLAYER:
                 getInput();
                 break;
@@ -53,46 +65,271 @@ public class Pool
             case CALCULATE_RULES:
                 calcRules();
                 break;
+            case GAME_OVER:
+                //gameOver();
+                break;
         }      
     }
 
     private void calcRules(){
-        if(this.state.getBreak()){
-            //Break rules
+        System.out.println("BEFORE CALCULATION: ");
+        System.out.println("STAGE: " + this.state.getStage().toString());
+        System.out.println("BREAK: " + this.state.getBreak());
+        System.out.println("CURRENT PLAYER: " + (this.state.getPlayerIndex()+1));
+        System.out.println("CURRENT PLAYER COLOUR: " + this.players[this.state.getPlayerIndex()].getColour());
+        System.out.println("FIRST BALL HIT WAS: " + this.state.getFirstHit());
+        System.out.println("FIRST BALL HIT COLOUR WAS: " + billiards[this.state.getFirstHit()].getColour());
+        System.out.println("CURRENT BALLS:" + this.state.getPocketedBalls());
+        System.out.println("FINAL BALLS:" + this.state.getPocketedFinal());      
+        System.out.println("");
 
-        }
-
-        
-        if(!this.state.getPocketedBalls().isEmpty()){//IF NOT EMPTY
-            if(this.state.getFirstHit() != 0 && billiards[this.state.getFirstHit()].getColour() != players[this.state.getPlayerIndex()].getColour().toString()){
-                    this.state.getPocketedBalls().remove(this.state.getPocketedBalls().indexOf(0));
-                    players[this.state.getPlayerIndex()].changePlayer(this.state.getPlayerIndex());
+        if(this.state.getBreak()){ //BREAK
+            //Break logic
+            System.out.println("# BALLS WALL COLLIDE: " + this.state.getBallsWallCollided().size());
+            System.out.println("# POCKETED BALLS: " + this.state.getPocketedBalls().size());
+            System.out.println("WAS WHITE POCKETED: " + this.state.getPocketedBalls().contains(0));
+            if(this.state.getBallsWallCollided().size() >= 2 || (this.state.getPocketedBalls().size() > 0 && !this.state.getPocketedBalls().contains(0))){ 
+                System.out.println("SUCC BREAK\n");
+                //SUCCESSFUL BREAK
+                if(this.state.getPocketedBalls().size() == 0 ){
+                    switchPlayers();
+                }
+                this.state.setBreak(false);
+                this.state.setStage(Stage.PLAYER);
+            }else{ 
+                //FAILED BREAK
+                System.out.println("FAILED BREAK\n");
+                switchPlayers();
+                int ans = JOptionPane.showConfirmDialog(null, "Player " + (this.state.getPlayerIndex()+1) + " do you wish to re-rack?");  
+                if(ans == JOptionPane.YES_OPTION){
+                    rerack();
+                    this.state.setStage(Stage.INKITCHEN);
+                }else{
+                    this.state.setBreak(false);
+                    this.state.setStage(Stage.PLAYER);
+                } 
+                if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){
+                    this.state.setStage(Stage.INKITCHEN);
+                }
+                
             }
-        }else{
+        }else{ //NORMAL SHOT
+            switch(players[this.state.getPlayerIndex()].getColour()){
+                case DEFAULT:
+                    if(this.state.getFirstHit()!=0){ //HIT A BALL
+                        if(this.state.getFirstHit() == 4){ //BLACK HIT
+                            switchPlayers();
+                            this.state.setStage(Stage.INHAND);
+                            break;
+                        }
+                        if(this.state.getPocketedBalls().isEmpty()){ //EMPTY
+                            switchPlayers();
+                            this.state.setStage(Stage.PLAYER);
+                        }else{
+                            System.out.println();
+                            System.out.println(this.state.getPocketedBalls().contains(Integer.valueOf(0)));
+                            System.out.println();
+                            if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //WHITE POTTED
+                                this.state.setStage(Stage.INHAND);
+                                switchPlayers();
+                            }else if(this.state.getPocketedBalls().size() == 1){ //ONE
+                                assignColours();
+                                this.state.setStage(Stage.PLAYER);
+                            }else{ //MORE THAN 1
+                                int numRed = 0;
+                                int numYel = 0;
+                                for(int i : this.state.getPocketedBalls()){
+                                    if(billiards[i].getColour() == "RED"){
+                                        numRed++;
+                                    }else{
+                                        numYel++;
+                                    }
+                                }
+                                if(numRed !=0 & numYel != 0){ //DOUBLE COLOUR POTTED
+                                    this.state.setStage(Stage.PLAYER);
+                                }else{ //SINGLE COLOUR POTTED
+                                    assignColours();
+                                    this.state.setStage(Stage.PLAYER);
+                                }
+                            }
+                        }
+                    }else{ //HIT NOTHING
+                        this.state.setStage(Stage.INHAND);
+                        switchPlayers();
+                    }
+                    break;
+                case RED:
+                    if(billiards[this.state.getFirstHit()].getColour() == "RED"){ //HIT A RED
+                        if(this.state.getPocketedBalls().isEmpty()){ //NOTHING POTTED
+                            this.state.setStage(Stage.PLAYER);
+                            switchPlayers();
+                        }else{ //SOMETHING WAS POTTED
+                            if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //WHITE POTTED
+                                this.state.setStage(Stage.INHAND);
+                                switchPlayers();
+                            }else if(this.state.getPocketedBalls().size() == 1){ //ONE POTTED
+                                if(billiards[this.state.getPocketedBalls().get(0)].getColour() == "RED"){ //IT WAS RED
+                                    this.state.setStage(Stage.PLAYER);
+                                }else{ //IT WASNT
+                                    switchPlayers();
+                                    this.state.setStage(Stage.INHAND);
+                                }                                
+                            }else{ //MORE THAN 1
+                                int numRed = 0;
+                                for(int i : this.state.getPocketedBalls()){
+                                    if(billiards[i].getColour() == "RED"){
+                                        numRed++;
+                                    }
+                                }
+                                if(numRed > 0){ //POCKETED A RED
+                                    this.state.setStage(Stage.PLAYER);
+                                }else{ //DIDNT
+                                    switchPlayers();
+                                    this.state.setStage(Stage.INHAND);
+                                }
+                            }
+                        }
+                    }else{ //DIDNT HIT A RED
+                        this.state.setStage(Stage.INHAND);
+                        switchPlayers();
+                    }
+                    break;
+                case YELLOW:
+                    if(billiards[this.state.getFirstHit()].getColour() == "YELLOW"){ //HIT A YELLOW
+                        if(this.state.getPocketedBalls().isEmpty()){ //NOTHING POTTED
+                            this.state.setStage(Stage.PLAYER);
+                            switchPlayers();
+                        }else{ //SOMETHING WAS POTTED
+                            if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //WHITE POTTED
+                                this.state.setStage(Stage.INHAND);
+                                switchPlayers();
+                            }else if(this.state.getPocketedBalls().size() == 1){ //ONE POTTED
+                                if(billiards[this.state.getPocketedBalls().get(0)].getColour() == "YELLOW"){ //IT WAS YELLOW
+                                    this.state.setStage(Stage.PLAYER);
+                                }else{ //IT WASNT
+                                    switchPlayers();
+                                    this.state.setStage(Stage.INHAND);
+                                }                                
+                            }else{ //MORE THAN 1
+                                int numYel = 0;
+                                for(int i : this.state.getPocketedBalls()){
+                                    if(billiards[i].getColour() == "YELLOW"){
+                                        numYel++;
+                                    }
+                                }
+                                if(numYel > 0){ //POCKETED A YELLOW
+                                    this.state.setStage(Stage.PLAYER);
+                                }else{ //DIDNT
+                                    switchPlayers();
+                                    this.state.setStage(Stage.INHAND);
+                                }
+                            }
+                        }
+                    }else{ //DIDNT HIT A YELLOW
+                        this.state.setStage(Stage.INHAND);
+                        switchPlayers();
+                    }
+                    break;
+                case BLACK:
+                    if(billiards[this.state.getFirstHit()].getColour() == "BLACK"){ //HIT A BLACK
+                        if(this.state.getPocketedBalls().isEmpty()){ //NOTHING POTTED
+                            this.state.setStage(Stage.PLAYER);
+                            switchPlayers();
+                        }else{ //SOMETHING WAS POTTED
+                            if(this.state.getPocketedBalls().size() == 1){ //ONE POTTED
+                                if(billiards[this.state.getPocketedBalls().get(0)].getColour() == "BLACK"){ //IT WAS BLACK
+                                    this.state.setStage(Stage.PLAYER);
+                                }else{ //IT WASNT
+                                    switchPlayers();
+                                    this.state.setStage(Stage.PLAYER);
+                                    if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //IT WAS WHITE
+                                        this.state.setStage(Stage.INHAND);
+                                    }
+                                }                                
+                            }else{ //MORE THAN 1
+                                if(this.state.getPocketedBalls().contains(4)){ //AT LEAST POTTED BLACK
+                                    this.state.setStage(Stage.GAME_OVER);
+                                    if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //POTTED BLACK & WHITE
+                                        //LOSE
+                                        switchPlayers();
+                                    }
+                                }else{ //NO BLACK POTTED
+                                    switchPlayers();
+                                    this.state.setStage(Stage.PLAYER);
+                                    if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){
+                                        this.state.setStage(Stage.INHAND);
+                                    }
+                                }
 
+                            }
+                        }
+                    }else{ //DIDNT HIT A BLACK
+                        this.state.setStage(Stage.INHAND);
+                        switchPlayers();
+                    }
+                    break;
+            }
         }
-
         //Reset
-        this.state.setStage(Stage.PLAYER);
         this.state.setWhiteHit(false);
         this.state.setFirstHit(0);
         this.state.getPocketedBalls().clear();
+        this.state.getPocketedFinal().remove(Integer.valueOf(0));
+        //PROOF
+        System.out.println("AFTER CALCULATION: ");
+        System.out.println("STAGE: " + this.state.getStage().toString());
+        System.out.println("BREAK: " + this.state.getBreak());
+        System.out.println("CURRENT PLAYER: " + (this.state.getPlayerIndex()+1));
+        System.out.println("CURRENT PLAYER COLOUR: " + this.players[this.state.getPlayerIndex()].getColour());
+        System.out.println("FIRST BALL HIT WAS: " + this.state.getFirstHit());
+        System.out.println("CURRENT BALLS:" + this.state.getPocketedBalls());
+        System.out.println("FINAL BALLS:" + this.state.getPocketedFinal());      
+        System.out.println("");
+        
+    }
 
-        System.out.println(this.state.getPocketedFinal());
-        System.out.println(this.state.getPocketedBalls());
-        System.out.println("Player; " + (this.state.getPlayerIndex()+1));
+    private void assignColours(){
+        if(billiards[this.state.getPocketedBalls().get(Integer.valueOf(0))].getColour() == "RED"){
+            players[this.state.getPlayerIndex()].setColour(Colour.RED);
+            switchPlayers();
+            players[this.state.getPlayerIndex()].setColour(Colour.YELLOW);
+            switchPlayers();
+        }else{
+            players[this.state.getPlayerIndex()].setColour(Colour.YELLOW);
+            switchPlayers();
+            players[this.state.getPlayerIndex()].setColour(Colour.RED);
+            switchPlayers();
+        }
+        
+    }
+
+    private void switchPlayers(){
+        if(this.state.getPlayerIndex() == 0){
+            this.state.setPlayerIndex(1);
+            if(players[1].getColour() != Colour.DEFAULT){
+                this.cue.setColour(players[1].getColour().toString());
+            }
+        }else{
+            this.state.setPlayerIndex(0);
+            if(players[0].getColour() != Colour.DEFAULT){
+                this.cue.setColour(players[0].getColour().toString());
+            }
+        }
     }
 
     private void checkPocketed(){
-        for(int i = 0; i < billiards.length; i++){
+        for(Billiard b : billiards){
             for(Pocket p : pockets){
-                double dx = billiards[i].getXPosition() - p.getXPosition();
-		        double dy = billiards[i].getYPosition() - p.getYPosition();
-		        double distance = Math.sqrt(dx*dx+dy*dy);
-                if(distance < p.getSize()){
-                    billiards[i].pocketed(this.state, i);
-                    billiards[i].setXPosition(endOfClothX + 60*ratio);
-                    billiards[i].setYPosition(startOfCloth + billiards[i].getSize()*(this.state.getPocketedFinal().size()-1));
+                double dx = b.getXPosition() - p.getXPosition();
+		        double dy = b.getYPosition() - p.getYPosition();
+                double distance = Math.sqrt(dx*dx+dy*dy);
+                if(distance < p.getSize() && !b.getPocketed()){
+                    b.setXVel(0);
+                    b.setYVel(0);
+                    b.setXPosition(endOfClothX + 60*ratio);
+                    this.state.getPocketedBalls().add(b.getIndex());
+                    this.state.getPocketedFinal().add(b.getIndex());
+                    b.setYPosition(startOfCloth + b.getSize()*this.state.getPocketedFinal().size());                   
                 }
             }
         }
@@ -100,37 +337,35 @@ public class Pool
 
     private void moveBalls(){
         checkBallCollision();
-        checkWallCollision();
-        for (Billiard i : billiards){
-            i.setXVel(i.getXVel() * friction);
-            i.setXPosition(i.getXPosition() + i.getXVel());
-            i.setYVel(i.getYVel() * friction);
-            i.setYPosition(i.getYPosition() + i.getYVel());
-            if(i.getXVel()*i.getXVel() < 0.001){
-                i.setXVel(0);
-            }
-            if(i.getYVel()*i.getYVel() < 0.001){
-                i.setYVel(0);
-            }
-        }
+        checkWallCollision();        
         checkPocketed();
         moveLogic();
+        for (Billiard i : billiards){
+            if(!i.getPocketed()){
+                i.setXVel(i.getXVel() * friction);
+                i.setXPosition(i.getXPosition() + i.getXVel());
+                i.setYVel(i.getYVel() * friction);
+                i.setYPosition(i.getYPosition() + i.getYVel());
+                if(i.getXVel()*i.getXVel() < 0.001){
+                    i.setXVel(0);
+                }
+                if(i.getYVel()*i.getYVel() < 0.001){
+                    i.setYVel(0);
+                }
+            }
+            //System.out.println(i.getIndex() + ", xPos" + i.getXPosition() + ", yPos:" + i.getYPosition() + ", xVel" + i.getXVel() + ", yVel:" + i.getYVel());
+        }
     }
 
     private void moveLogic(){
-        if(!this.state.getWhiteHit()){
+        if(this.state.getWhiteHit()){
             int i = 0;
             for(Billiard b : billiards){
-                if(billiards[0].collides(b)){
-                    this.state.setWhiteHit(true);;
+                if(billiards[0].collides(b) && i != 0){
+                    this.state.setWhiteHit(false);
                     this.state.setFirstHit(i);
                 }
                 i++;
-            }
-        }
-        for(int i = 0; i < billiards.length; i++){
-            if(billiards[i].getPocketed() && !this.state.getPocketedBalls().contains(i)){
-                this.state.getPocketedBalls().add(i);
             }
         }
     }
@@ -150,13 +385,59 @@ public class Pool
         //Set cue rotation to mouse to white ball direciton vector
         cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
 
-        double power = 15*ratio;
+        Rectangle powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 500, 30, "WHITE");
+        
+        gm.addRectangle(powerBar);
+        double power = 60*ratio;
+
         if(gm.leftMousePressed()){
+            System.out.println("SHOT TAKEN");
             billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
             this.state.setWhiteHit(false);
             this.state.setStage(Stage.MOVEMENT);
+        }else if(gm.upPressed()){
+        
+        }else if(gm.downPressed()){
+            
+            powerBar.setWidth(powerBar.getWidth() - 20);
+            
         }
+
+    }
+
+    private void getCueBallInHand() throws InterruptedException{
+        cue.setVisibiity(false);
+        double mouseX = gm.getMousePositionX();
+        double mouseY = gm.getMousePositionY();
+        if(mouseX < endOfClothX-billiards[0].getSize()/2 && mouseX > startOfCloth+billiards[0].getSize()/2 && mouseY < endOfClothY-billiards[0].getSize()/2 && mouseY > startOfCloth+billiards[0].getSize()/2){
+            billiards[0].setXPosition(mouseX);
+            billiards[0].setYPosition(mouseY);
+            if(gm.leftMousePressed()){
+                billiards[0].setXPosition(mouseX);
+                billiards[0].setYPosition(mouseY);
+                this.state.setStage(Stage.PLAYER);
+                Thread.sleep(200);
+                cue.setVisibiity(true);
+            }
+        }        
+    }
+
+    private void getCueBallInKitchen() throws InterruptedException{
+        cue.setVisibiity(false);
+        double mouseX = gm.getMousePositionX();
+        double mouseY = gm.getMousePositionY();
+        if(mouseX < this.baulkLine.getXStart() && mouseX > startOfCloth+billiards[0].getSize()/2 && mouseY < endOfClothY-billiards[0].getSize()/2 && mouseY > startOfCloth+billiards[0].getSize()/2){
+            billiards[0].setXPosition(mouseX);
+            billiards[0].setYPosition(mouseY);
+            if(gm.leftMousePressed()){
+                billiards[0].setXPosition(mouseX);
+                billiards[0].setYPosition(mouseY);
+                this.state.setStage(Stage.PLAYER);
+                Thread.sleep(200);
+                cue.setVisibiity(true);
+            }
+        }        
     }
 
     private boolean checkMovement(){
@@ -180,9 +461,9 @@ public class Pool
                 }                
             }
         }
-        if(!this.state.getWhiteHit()){
+        if(!this.state.getWhiteHit()){ // NOT: Has white hit another ball ? 
             for(Billiard b: billiards){
-                if(billiards[0].collides(b) && !billiards[0].equals(b)){
+                if(billiards[0].collides(b) && b.getIndex() != 0){
                     this.state.setWhiteHit(true);
                     b.setFirstHit(true);
                 }
@@ -195,15 +476,27 @@ public class Pool
             if(i.getXPosition() + i.getXVel() >= endOfClothX - i.getSize()/2){
                 //Bounce off right wall
                 i.setXVel(-i.getXVel() * friction);
+                if(!this.state.getBallsWallCollided().contains(i) && i.getIndex() != 0){
+                    this.state.getBallsWallCollided().add(i);
+                }
             }else if(i.getXPosition() + i.getXVel() <= startOfCloth + i.getSize()/2){
                 //Bounce off left wall
                 i.setXVel(-i.getXVel() * friction);
+                if(!this.state.getBallsWallCollided().contains(i) && i.getIndex() != 0){
+                    this.state.getBallsWallCollided().add(i);
+                }
             }else if(i.getYPosition() + i.getYVel() >= endOfClothY - i.getSize()/2){
                 //Bounce off bottom wall
                 i.setYVel(-i.getYVel() * friction);
+                if(!this.state.getBallsWallCollided().contains(i) && i.getIndex() != 0){
+                    this.state.getBallsWallCollided().add(i);
+                }
             }else if(i.getYPosition() + i.getYVel() <= startOfCloth + i.getSize()/2){
                 //Bounce off top wall
                 i.setYVel(-i.getYVel() * friction);
+                if(!this.state.getBallsWallCollided().contains(i) && i.getIndex() != 0){
+                    this.state.getBallsWallCollided().add(i);
+                }
             }
         }
     }
@@ -263,6 +556,42 @@ public class Pool
         return result;
     }
 
+    private void rerack(){
+        double d = 18.75*ratio;
+        double frontDotX = 750*ratio + startOfCloth;
+        double frontDotY = 450*ratio/2 + startOfCloth;
+        billiards[1].setXPosition(frontDotX - 0.5);
+        billiards[1].setYPosition(frontDotY);
+        billiards[2].setXPosition(frontDotX + d*Math.cos(0.523599));
+        billiards[2].setYPosition(frontDotY + d*Math.sin(0.523599));
+        billiards[3].setXPosition(frontDotX + d*Math.cos(0.523599));
+        billiards[3].setYPosition(frontDotY - d*Math.sin(0.523599));
+        billiards[4].setXPosition(frontDotX + 2*d*Math.cos(0.523599) + 0.5);
+        billiards[4].setYPosition(frontDotY);
+        billiards[5].setXPosition(frontDotX + 2*d*Math.cos(0.523599) + 0.5);
+        billiards[5].setYPosition(frontDotY + d);
+        billiards[6].setXPosition(frontDotX + 2*d*Math.cos(0.523599) + 0.5);
+        billiards[6].setYPosition(frontDotY - d);
+        billiards[7].setXPosition(frontDotX + 3*d*Math.cos(0.523599) + 1);
+        billiards[7].setYPosition(frontDotY + d*Math.sin(0.523599));
+        billiards[8].setXPosition(frontDotX + 3*d*Math.cos(0.523599) + 1);
+        billiards[8].setYPosition(frontDotY - d*Math.sin(0.523599));
+        billiards[9].setXPosition(frontDotX + 3*d*Math.cos(0.523599) + 1);
+        billiards[9].setYPosition(frontDotY + d*Math.sin(0.523599) + d);
+        billiards[10].setXPosition(frontDotX + 3*d*Math.cos(0.523599) + 1);
+        billiards[10].setYPosition(frontDotY - d*Math.sin(0.523599) - d);
+        billiards[11].setXPosition(frontDotX + 4*d*Math.cos(0.523599) + 1.5);
+        billiards[11].setYPosition(frontDotY);
+        billiards[12].setXPosition(frontDotX + 4*d*Math.cos(0.523599) + 1.5);
+        billiards[12].setYPosition(frontDotY + d);
+        billiards[13].setXPosition(frontDotX + 4*d*Math.cos(0.523599) + 1.5);
+        billiards[13].setYPosition(frontDotY - d);
+        billiards[14].setXPosition(frontDotX + 4*d*Math.cos(0.523599) + 1.5);
+        billiards[14].setYPosition(frontDotY + 2*d);
+        billiards[15].setXPosition(frontDotX + 4*d*Math.cos(0.523599) + 1.5);
+        billiards[15].setYPosition(frontDotY - 2*d);
+    }
+
     private void init(GameArena gm){
         players[0] = new Player(0);
         players[1] = new Player(1);
@@ -285,7 +614,6 @@ public class Pool
             gm.addBall(pocket);
         }
 
-        Line baulkLine = new Line(startOfCloth + 210*ratio, startOfCloth, startOfCloth + 210*ratio, endOfClothY, 5, "WHITE");
         gm.addLine(baulkLine);
 
         billiards = new Billiard[16];

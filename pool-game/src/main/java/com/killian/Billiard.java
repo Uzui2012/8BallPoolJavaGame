@@ -7,6 +7,7 @@ public class Billiard extends Ball {
     private double yAcc;
     private boolean firstHit;
     private boolean pocketed;
+    private int index;
     
     public Billiard(double x, double y, double ratio, String col, int index){
         super(x, y, 18.75*ratio, col);
@@ -16,7 +17,12 @@ public class Billiard extends Ball {
         this.yAcc = 0;
         this.pocketed = false;
         this.firstHit = false;
+        this.index = index;
 
+    }
+
+    public int getIndex(){
+        return this.index;
     }
 
     public void setFirstHit(boolean flag){
@@ -62,13 +68,4 @@ public class Billiard extends Ball {
     public boolean getPocketed(){
         return this.pocketed;
     }
-
-    public void pocketed(State state, int index){
-        this.xVel = 0;
-        this.yVel = 0;
-        this.pocketed = true;
-        state.getPocketedFinal().add(index);
-        state.getPocketedBalls().add(index);
-    }
-
 }
