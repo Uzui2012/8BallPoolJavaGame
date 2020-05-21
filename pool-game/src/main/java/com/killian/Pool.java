@@ -39,10 +39,8 @@ public class Pool extends WindowAdapter
         this.players = new Player[2]; //index 0: Player 1
                                       //index 1: Player 2
         this.gm = new GameArena(1920, 1080);
-
         // Class + Game Arena set up
         init(gm);
-
         // Game Loop
         while (true){
             update();
@@ -393,12 +391,10 @@ public class Pool extends WindowAdapter
             theta = Math.PI - arcTan;
         }
         //Set cue rotation to mouse to white ball direciton vector
-        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
-        
+        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());        
         double[] endProj = calcProj(theta);
         wProjectionLine.setWidth(2);
         wProjectionLine.setLinePosition(billiards[0].getXPosition(), billiards[0].getYPosition(), endProj[0], endProj[1]);
-
         if(gm.leftMousePressed()){
             billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
@@ -423,14 +419,13 @@ public class Pool extends WindowAdapter
         phantomBallFill.setYPosition(0);
         double[] startPos = {billiards[0].getXPosition(), billiards[0].getYPosition()};
         double[] endPos = startPos;
-
         //CAST RAY IN DIRECTION THETA        
         for(int i = 0; i < 110000; i ++){
             endPos[0] = endPos[0] - 0.01*Math.cos(newTheta);
             endPos[1] = endPos[1] - 0.01*Math.sin(newTheta);
             for(int j = 1; j < billiards.length; j++){
-                double distance = Math.sqrt((endPos[0] - billiards[j].getXPosition())*(endPos[0] - billiards[j].getXPosition()) + (endPos[1] - billiards[j].getYPosition())*(endPos[1] - billiards[j].getYPosition()));
-
+                double distance = Math.sqrt((endPos[0] - billiards[j].getXPosition())*(endPos[0] - billiards[j].getXPosition()) + 
+                                            (endPos[1] - billiards[j].getYPosition())*(endPos[1] - billiards[j].getYPosition()));
                 if(distance < billiards[j].getSize()){ //IF THIS RAY HITS ANY BALL
                     phantomBallOutLine.setColour("GREY"); //PROJECT PHANTOM BALL
                     phantomBallOutLine.setXPosition(endPos[0]);
@@ -441,8 +436,7 @@ public class Pool extends WindowAdapter
                     i = 110000; //HALT CASTING RAY
                 }
             }
-        }
-        
+        }        
         return endPos;
     }
 
@@ -450,7 +444,8 @@ public class Pool extends WindowAdapter
         cue.setVisibiity(false);
         double mouseX = gm.getMousePositionX();
         double mouseY = gm.getMousePositionY();
-        if(mouseX < endOfClothX-billiards[0].getSize()/2 && mouseX > startOfCloth+billiards[0].getSize()/2 && mouseY < endOfClothY-billiards[0].getSize()/2 && mouseY > startOfCloth+billiards[0].getSize()/2){
+        if(mouseX < endOfClothX-billiards[0].getSize()/2 && mouseX > startOfCloth+billiards[0].getSize()/2 &&
+           mouseY < endOfClothY-billiards[0].getSize()/2 && mouseY > startOfCloth+billiards[0].getSize()/2){
             billiards[0].setXPosition(mouseX);
             billiards[0].setYPosition(mouseY);
             if(gm.leftMousePressed()){
@@ -580,9 +575,7 @@ public class Pool extends WindowAdapter
         for (int i=0; i < dimensions; i++){
             mag += vec[i] * vec[i];
         }
-
         mag = Math.sqrt(mag);
-
         if (mag == 0.0){
             result[0] = 1.0;
             for (int i=1; i < dimensions; i++){
@@ -636,25 +629,17 @@ public class Pool extends WindowAdapter
     private void init(GameArena gm){
         players[0] = new Player();
         players[1] = new Player();
-        power = 30;
-        
+        power = 30;        
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
         double frontDotY = 450*ratio/2 + startOfCloth;
         Table table = new Table(startOfCloth, startOfCloth, 900 * ratio, 450 * ratio);
         gm.addRectangle(new Rectangle(150, 150, 900 * ratio + diff * 2, 450 * ratio + diff * 2, "BROWN"));
         gm.addRectangle(table);
-
         Text pbText = new Text("Power Bar:", 20, startOfCloth, startOfCloth - 100, "WHITE");
         gm.addText(pbText);
-
-        
-
         powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 250, 30, "BLUE");        
         gm.addRectangle(powerBar);
-
-        
-
         pockets = new Pocket[6];
         pockets[0] = new Pocket(startOfCloth, startOfCloth, ratio);
         pockets[1] = new Pocket(endOfClothX, startOfCloth, ratio);
@@ -665,9 +650,7 @@ public class Pool extends WindowAdapter
         for (Pocket pocket : pockets){
             gm.addBall(pocket);
         }
-
         gm.addLine(baulkLine);
-
         billiards = new Billiard[16];
         billiards[0] = new Billiard(startOfCloth + 300, startOfCloth + 310, ratio, "WHITE", 0);
         billiards[1] = new Billiard(frontDotX - 0.5, frontDotY, ratio, "RED", 1);
@@ -689,15 +672,12 @@ public class Pool extends WindowAdapter
             gm.addBall(billiards[i]);
         }
         this.state = new State(billiards);
-
         playerStatus = new Text("Player:" + (this.state.getPlayerIndex()+1) + "    Colour: " + players[this.state.getPlayerIndex()].getColour(), 20, startOfCloth + 700, startOfCloth - 100, "WHITE");
         gm.addText(playerStatus);
-
         phantomBallOutLine = new Ball(0, 0, billiards[0].getSize(), "GREY");
         phantomBallFill = new Ball(0, 0, billiards[0].getSize() - 3, "GREY");
         gm.addBall(phantomBallOutLine);
         gm.addBall(phantomBallFill);
-
         this.cue = new Cue(billiards[0].getXPosition(), billiards[0].getYPosition(), ratio);
         this.wProjectionLine = new Line(0, 0, 0, 0, 1, "GREY");
         this.oProjectionLine = new Line(0, 0, 0, 0, 1, "GREY");
