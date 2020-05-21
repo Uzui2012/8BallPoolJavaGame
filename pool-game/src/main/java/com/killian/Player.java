@@ -4,7 +4,7 @@ public class Player
 {
     private Colour colour;
 
-    public Player(int index){
+    public Player(){
         this.colour = Colour.DEFAULT;
     }
 

@@ -64,6 +64,8 @@ public class Ball
 		return xPosition;
 	}
 
+	
+
 	/**
 	 * Obtains the current position of this Ball.
 	 * @return the Y coordinate of this Ball within the GameArena.

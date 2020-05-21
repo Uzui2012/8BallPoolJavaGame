@@ -13,9 +13,10 @@ public class State {
     private boolean firstBall;    
     private List<Integer> pocketedBalls;
     private List<Integer> pocketedFinal;
+    private List<Integer> ballsInPlay;
     private List<Billiard> BallsWallCollided;
 
-    public State(){
+    public State(Billiard[] billiards){
         this.stage = Stage.INKITCHEN;
         this.playerIndex = 0;
         this.whiteHit = false;
@@ -24,7 +25,14 @@ public class State {
         this.firstBall = false;
         this.pocketedBalls = new ArrayList<Integer>();
         this.pocketedFinal = new ArrayList<Integer>();
+        this.ballsInPlay = new ArrayList<Integer>();
         this.BallsWallCollided = new ArrayList<Billiard>();
+
+        for(Billiard b : billiards){
+            if(b.getIndex() != 0){
+                ballsInPlay.add(b.getIndex());
+            }
+        }
     }
 
     public boolean getBreak(){
@@ -61,6 +69,9 @@ public class State {
 
     public List<Integer> getPocketedFinal(){
         return this.pocketedFinal;
+    }
+    public List<Integer> getBallsInPlay(){
+        return this.ballsInPlay;
     }
 
     public Stage getStage(){

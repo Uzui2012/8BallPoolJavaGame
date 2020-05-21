@@ -21,6 +21,11 @@ public class Pool extends WindowAdapter
     private Player[] players;
     private Billiard[] billiards;
     private Cue cue;
+    private Line wProjectionLine;
+    private Line oProjectionLine;
+    private Ball phantomBallOutLine;
+    private Ball phantomBallFill;
+    private Text playerStatus;
     private GameArena gm;
 
     public Pool() throws InterruptedException{
@@ -30,9 +35,7 @@ public class Pool extends WindowAdapter
         this.endOfClothX = startOfCloth + 900 * ratio;
         this.endOfClothY = startOfCloth + 450 * ratio;
         this.friction = 0.9825;
-        this.baulkLine = new Line(startOfCloth + 210*ratio, startOfCloth, startOfCloth + 210*ratio, endOfClothY, 5, "WHITE");
-
-        this.state = new State();
+        this.baulkLine = new Line(startOfCloth + 210*ratio, startOfCloth, startOfCloth + 210*ratio, endOfClothY, 5, "WHITE");        
         this.players = new Player[2]; //index 0: Player 1
                                       //index 1: Player 2
         this.gm = new GameArena(1920, 1080);
@@ -68,48 +71,35 @@ public class Pool extends WindowAdapter
                 calcRules();
                 break;
             case GAME_OVER:
-                //gameOver();
+                gameOver();
                 break;
         }      
     }
 
     private void calcRules(){
-        System.out.println("BEFORE CALCULATION: ");
-        System.out.println("STAGE: " + this.state.getStage().toString());
-        System.out.println("BREAK: " + this.state.getBreak());
-        System.out.println("CURRENT PLAYER: " + (this.state.getPlayerIndex()+1));
-        System.out.println("CURRENT PLAYER COLOUR: " + this.players[this.state.getPlayerIndex()].getColour());
-        System.out.println("FIRST BALL HIT WAS: " + this.state.getFirstHit());
-        System.out.println("FIRST BALL HIT COLOUR WAS: " + billiards[this.state.getFirstHit()].getColour());
-        System.out.println("CURRENT BALLS:" + this.state.getPocketedBalls());
-        System.out.println("FINAL BALLS:" + this.state.getPocketedFinal());      
-        System.out.println("");
-
         if(this.state.getBreak()){ //BREAK
             //Break logic
-            System.out.println("# BALLS WALL COLLIDE: " + this.state.getBallsWallCollided().size());
-            System.out.println("# POCKETED BALLS: " + this.state.getPocketedBalls().size());
-            System.out.println("WAS WHITE POCKETED: " + this.state.getPocketedBalls().contains(0));
             if(this.state.getBallsWallCollided().size() >= 2 || (this.state.getPocketedBalls().size() > 0 && !this.state.getPocketedBalls().contains(0))){ 
-                System.out.println("SUCC BREAK\n");
                 //SUCCESSFUL BREAK
                 if(this.state.getPocketedBalls().size() == 0 ){
                     switchPlayers();
                 }
                 this.state.setBreak(false);
                 this.state.setStage(Stage.PLAYER);
+                if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){
+                    this.state.setStage(Stage.INKITCHEN);
+                }
             }else{ 
                 //FAILED BREAK
-                System.out.println("FAILED BREAK\n");
                 switchPlayers();
-                int ans = JOptionPane.showConfirmDialog(null, "Player " + (this.state.getPlayerIndex()+1) + " do you wish to re-rack?");  
+                int ans = JOptionPane.showConfirmDialog(null, "Player " + (this.state.getPlayerIndex()+1) + " do you wish to re-rack?", "Unsuccessful Break", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null);  
                 if(ans == JOptionPane.YES_OPTION){
                     rerack();
                     this.state.setStage(Stage.INKITCHEN);
                 }else{
                     this.state.setBreak(false);
                     this.state.setStage(Stage.PLAYER);
-                } 
+                }
                 if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){
                     this.state.setStage(Stage.INKITCHEN);
                 }
@@ -128,19 +118,18 @@ public class Pool extends WindowAdapter
                             switchPlayers();
                             this.state.setStage(Stage.PLAYER);
                         }else{
-                            System.out.println();
-                            System.out.println(this.state.getPocketedBalls().contains(Integer.valueOf(0)));
-                            System.out.println();
                             if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //WHITE POTTED
                                 this.state.setStage(Stage.INHAND);
                                 switchPlayers();
                             }else if(this.state.getPocketedBalls().size() == 1){ //ONE
+                                this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                 assignColours();
                                 this.state.setStage(Stage.PLAYER);
                             }else{ //MORE THAN 1
                                 int numRed = 0;
                                 int numYel = 0;
                                 for(int i : this.state.getPocketedBalls()){
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(i));
                                     if(billiards[i].getColour() == "RED"){
                                         numRed++;
                                     }else{
@@ -172,19 +161,32 @@ public class Pool extends WindowAdapter
                             }else if(this.state.getPocketedBalls().size() == 1){ //ONE POTTED
                                 if(billiards[this.state.getPocketedBalls().get(0)].getColour() == "RED"){ //IT WAS RED
                                     this.state.setStage(Stage.PLAYER);
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                 }else{ //IT WASNT
                                     switchPlayers();
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                     this.state.setStage(Stage.INHAND);
                                 }                                
                             }else{ //MORE THAN 1
                                 int numRed = 0;
                                 for(int i : this.state.getPocketedBalls()){
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                     if(billiards[i].getColour() == "RED"){
                                         numRed++;
                                     }
                                 }
                                 if(numRed > 0){ //POCKETED A RED
                                     this.state.setStage(Stage.PLAYER);
+                                    int count = 0;
+                                    for(int inPlay : this.state.getBallsInPlay()){
+                                        if(billiards[inPlay].getColour() == "RED")
+                                        {
+                                            count++;
+                                        }
+                                    }
+                                    if(count == 0){
+                                        players[this.state.getPlayerIndex()].setColour(Colour.BLACK);
+                                    }
                                 }else{ //DIDNT
                                     switchPlayers();
                                     this.state.setStage(Stage.INHAND);
@@ -208,13 +210,16 @@ public class Pool extends WindowAdapter
                             }else if(this.state.getPocketedBalls().size() == 1){ //ONE POTTED
                                 if(billiards[this.state.getPocketedBalls().get(0)].getColour() == "YELLOW"){ //IT WAS YELLOW
                                     this.state.setStage(Stage.PLAYER);
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                 }else{ //IT WASNT
                                     switchPlayers();
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                     this.state.setStage(Stage.INHAND);
                                 }                                
                             }else{ //MORE THAN 1
                                 int numYel = 0;
                                 for(int i : this.state.getPocketedBalls()){
+                                    this.state.getBallsInPlay().remove(this.state.getPocketedBalls().get(0));
                                     if(billiards[i].getColour() == "YELLOW"){
                                         numYel++;
                                     }
@@ -233,14 +238,14 @@ public class Pool extends WindowAdapter
                     }
                     break;
                 case BLACK:
-                    if(billiards[this.state.getFirstHit()].getColour() == "BLACK"){ //HIT A BLACK
+                    if(this.state.getFirstHit() == 4){ //HIT THE BLACK
                         if(this.state.getPocketedBalls().isEmpty()){ //NOTHING POTTED
                             this.state.setStage(Stage.PLAYER);
                             switchPlayers();
                         }else{ //SOMETHING WAS POTTED
                             if(this.state.getPocketedBalls().size() == 1){ //ONE POTTED
                                 if(billiards[this.state.getPocketedBalls().get(0)].getColour() == "BLACK"){ //IT WAS BLACK
-                                    this.state.setStage(Stage.PLAYER);
+                                    this.state.setStage(Stage.GAME_OVER);
                                 }else{ //IT WASNT
                                     switchPlayers();
                                     this.state.setStage(Stage.PLAYER);
@@ -254,6 +259,7 @@ public class Pool extends WindowAdapter
                                     if(this.state.getPocketedBalls().contains(Integer.valueOf(0))){ //POTTED BLACK & WHITE
                                         //LOSE
                                         switchPlayers();
+                                        this.state.setStage(Stage.GAME_OVER);
                                     }
                                 }else{ //NO BLACK POTTED
                                     switchPlayers();
@@ -272,22 +278,39 @@ public class Pool extends WindowAdapter
                     break;
             }
         }
-        //Reset
+        if(players[this.state.getPlayerIndex()].getColour() == Colour.RED){
+            int count = 0;
+            for(int inPlay : this.state.getBallsInPlay()){
+                if(billiards[inPlay].getColour() == "RED")
+                {
+                    count++;
+                }
+            }
+            if(count == 0){
+                players[this.state.getPlayerIndex()].setColour(Colour.BLACK);
+            }
+        }else if(players[this.state.getPlayerIndex()].getColour() == Colour.YELLOW){
+            int count = 0;
+            for(int inPlay : this.state.getBallsInPlay()){
+                if(billiards[inPlay].getColour() == "YELLOW")
+                {
+                    count++;
+                }
+            }
+            if(count == 0){
+                players[this.state.getPlayerIndex()].setColour(Colour.BLACK);
+            }
+        }
         this.state.setWhiteHit(false);
         this.state.setFirstHit(0);
         this.state.getPocketedBalls().clear();
         this.state.getPocketedFinal().remove(Integer.valueOf(0));
-        //PROOF
-        System.out.println("AFTER CALCULATION: ");
-        System.out.println("STAGE: " + this.state.getStage().toString());
-        System.out.println("BREAK: " + this.state.getBreak());
-        System.out.println("CURRENT PLAYER: " + (this.state.getPlayerIndex()+1));
-        System.out.println("CURRENT PLAYER COLOUR: " + this.players[this.state.getPlayerIndex()].getColour());
-        System.out.println("FIRST BALL HIT WAS: " + this.state.getFirstHit());
-        System.out.println("CURRENT BALLS:" + this.state.getPocketedBalls());
-        System.out.println("FINAL BALLS:" + this.state.getPocketedFinal());      
-        System.out.println("");
-        
+        this.playerStatus.setText("Player:" + (this.state.getPlayerIndex()+1) + "    Colour: " + players[this.state.getPlayerIndex()].getColour());
+    }
+
+    private void gameOver(){
+        gm.clearGameArena();
+        gm.addText(new Text("Player " + (this.state.getPlayerIndex()+1) + " HAS WON!", 45, 500, 500, "WHITE"));
     }
 
     private void assignColours(){
@@ -353,8 +376,7 @@ public class Pool extends WindowAdapter
                 if(i.getYVel()*i.getYVel() < 0.001){
                     i.setYVel(0);
                 }
-            }
-            //System.out.println(i.getIndex() + ", xPos" + i.getXPosition() + ", yPos:" + i.getYPosition() + ", xVel" + i.getXVel() + ", yVel:" + i.getYVel());
+            }           
         }
     }
     
@@ -371,22 +393,57 @@ public class Pool extends WindowAdapter
             theta = Math.PI - arcTan;
         }
         //Set cue rotation to mouse to white ball direciton vector
-        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());       
+        cue.setCue(theta, billiards[0].getXPosition(), billiards[0].getYPosition());
+        
+        double[] endProj = calcProj(theta);
+        wProjectionLine.setWidth(2);
+        wProjectionLine.setLinePosition(billiards[0].getXPosition(), billiards[0].getYPosition(), endProj[0], endProj[1]);
 
         if(gm.leftMousePressed()){
-            System.out.println("SHOT TAKEN");
             billiards[0].setXVel(power*-Math.cos(cue.getTheta()));
             billiards[0].setYVel(power*-Math.sin(cue.getTheta()));
             this.state.setWhiteHit(false);
             this.state.setStage(Stage.MOVEMENT);
         }else if(gm.upPressed() && power <= 60){
-            this.powerBar.setWidth(powerBar.getWidth() + 1);
+            this.powerBar.setWidth(powerBar.getWidth() + 8);
             power++;
         }else if(gm.downPressed() && power > 1){
-            this.powerBar.setWidth(powerBar.getWidth() - 1);
+            this.powerBar.setWidth(powerBar.getWidth() - 8);
             power--;                        
         }
-        System.out.println(power);
+    }
+
+    private double[] calcProj(double theta){
+        double newTheta = theta;
+        phantomBallOutLine.setColour("BLACK");
+        phantomBallOutLine.setXPosition(0);
+        phantomBallOutLine.setYPosition(0);
+        phantomBallFill.setColour("BLACK");
+        phantomBallFill.setXPosition(0);
+        phantomBallFill.setYPosition(0);
+        double[] startPos = {billiards[0].getXPosition(), billiards[0].getYPosition()};
+        double[] endPos = startPos;
+
+        //CAST RAY IN DIRECTION THETA        
+        for(int i = 0; i < 110000; i ++){
+            endPos[0] = endPos[0] - 0.01*Math.cos(newTheta);
+            endPos[1] = endPos[1] - 0.01*Math.sin(newTheta);
+            for(int j = 1; j < billiards.length; j++){
+                double distance = Math.sqrt((endPos[0] - billiards[j].getXPosition())*(endPos[0] - billiards[j].getXPosition()) + (endPos[1] - billiards[j].getYPosition())*(endPos[1] - billiards[j].getYPosition()));
+
+                if(distance < billiards[j].getSize()){ //IF THIS RAY HITS ANY BALL
+                    phantomBallOutLine.setColour("GREY"); //PROJECT PHANTOM BALL
+                    phantomBallOutLine.setXPosition(endPos[0]);
+                    phantomBallOutLine.setYPosition(endPos[1]);
+                    phantomBallFill.setColour("DARKGREEN");
+                    phantomBallFill.setXPosition(endPos[0]);
+                    phantomBallFill.setYPosition(endPos[1]);
+                    i = 110000; //HALT CASTING RAY
+                }
+            }
+        }
+        
+        return endPos;
     }
 
     private void getCueBallInHand() throws InterruptedException{
@@ -577,9 +634,9 @@ public class Pool extends WindowAdapter
     }
 
     private void init(GameArena gm){
-        players[0] = new Player(0);
-        players[1] = new Player(1);
-        power = 60;
+        players[0] = new Player();
+        players[1] = new Player();
+        power = 30;
         
         double d = 18.75*ratio;
         double frontDotX = 750*ratio + startOfCloth;
@@ -588,8 +645,15 @@ public class Pool extends WindowAdapter
         gm.addRectangle(new Rectangle(150, 150, 900 * ratio + diff * 2, 450 * ratio + diff * 2, "BROWN"));
         gm.addRectangle(table);
 
-        powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 500, 30, "WHITE");        
+        Text pbText = new Text("Power Bar:", 20, startOfCloth, startOfCloth - 100, "WHITE");
+        gm.addText(pbText);
+
+        
+
+        powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 250, 30, "BLUE");        
         gm.addRectangle(powerBar);
+
+        
 
         pockets = new Pocket[6];
         pockets[0] = new Pocket(startOfCloth, startOfCloth, ratio);
@@ -610,7 +674,7 @@ public class Pool extends WindowAdapter
         billiards[2] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY + d*Math.sin(0.523599), ratio, "YELLOW", 2);
         billiards[3] = new Billiard(frontDotX + d*Math.cos(0.523599), frontDotY - d*Math.sin(0.523599), ratio, "RED", 3);
         billiards[4] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY, ratio, "BLACK", 4);
-        billiards[5] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY + d, ratio, "RED", 5);
+        billiards[5] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY + d, ratio, "YELLOW", 5);
         billiards[6] = new Billiard(frontDotX + 2*d*Math.cos(0.523599) + 0.5, frontDotY - d, ratio, "YELLOW", 6);
         billiards[7] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1 , frontDotY + d*Math.sin(0.523599), ratio, "RED", 7);
         billiards[8] = new Billiard(frontDotX + 3*d*Math.cos(0.523599) + 1, frontDotY - d*Math.sin(0.523599), ratio, "YELLOW", 8);
@@ -624,9 +688,22 @@ public class Pool extends WindowAdapter
         for (int i = 0; i < 16; i ++){
             gm.addBall(billiards[i]);
         }
+        this.state = new State(billiards);
+
+        playerStatus = new Text("Player:" + (this.state.getPlayerIndex()+1) + "    Colour: " + players[this.state.getPlayerIndex()].getColour(), 20, startOfCloth + 700, startOfCloth - 100, "WHITE");
+        gm.addText(playerStatus);
+
+        phantomBallOutLine = new Ball(0, 0, billiards[0].getSize(), "GREY");
+        phantomBallFill = new Ball(0, 0, billiards[0].getSize() - 3, "GREY");
+        gm.addBall(phantomBallOutLine);
+        gm.addBall(phantomBallFill);
 
         this.cue = new Cue(billiards[0].getXPosition(), billiards[0].getYPosition(), ratio);
+        this.wProjectionLine = new Line(0, 0, 0, 0, 1, "GREY");
+        this.oProjectionLine = new Line(0, 0, 0, 0, 1, "GREY");
         gm.addLine(cue);
+        gm.addLine(wProjectionLine);
+        gm.addLine(oProjectionLine);
     }
 }
 
