@@ -53,7 +53,7 @@ public class Pool extends WindowAdapter
     /**
      * Pocket objects that represent the pocekts of a pool table.
      */
-    private Ball[] pockets;
+    private Pocket[] pockets;
     /**
      * Player objects that represent the players currently playing at the table. Could later be used to implement more than 2 player versions of the game.
      */
@@ -774,17 +774,17 @@ public class Pool extends WindowAdapter
         gm.addText(new Text("Power Bar:", 20, startOfCloth, startOfCloth - 100, "WHITE"));
         gm.addText(new Text("When ball is in hand the ball will follow your mouse, place by left clicking.", 20, startOfCloth, endOfClothY + 90, "WHITE"));
         gm.addText(new Text("Once placed for a break, move mouse to aim the cue, left click to shoot.", 20, startOfCloth, endOfClothY + 120, "WHITE"));
-        gm.addText(new Text("Change the power of the shot with the up and down arrow keys on the keyboard. Indicated power shown in the power bar.", 20, startOfCloth, endOfClothY + 150, "WHITE"));
+        gm.addText(new Text("Change the power of the shot with the up and down arrow keys on the keyboard. Indicated power shown in.", 20, startOfCloth, endOfClothY + 150, "WHITE"));
         powerBar = new Rectangle(startOfCloth, startOfCloth - 80, 250, 30, "BLUE");        
         gm.addRectangle(powerBar);
-        pockets = new Ball[6];
-        pockets[0] = new Ball(startOfCloth, startOfCloth, ratio, "BLACK");
-        pockets[1] = new Ball(endOfClothX, startOfCloth, ratio, "BLACK");
-        pockets[2] = new Ball((endOfClothX - startOfCloth) / 2 + startOfCloth, startOfCloth - 10, ratio, "BLACK");
-        pockets[3] = new Ball(startOfCloth, endOfClothY, ratio, "BLACK");
-        pockets[4] = new Ball(endOfClothX, endOfClothY, ratio, "BLACK");
-        pockets[5] = new Ball((endOfClothX - startOfCloth) / 2 + startOfCloth, endOfClothY + 10, ratio, "BLACK");
-        for (Ball pocket : pockets){
+        pockets = new Pocket[6];
+        pockets[0] = new Pocket(startOfCloth, startOfCloth, ratio);
+        pockets[1] = new Pocket(endOfClothX, startOfCloth, ratio);
+        pockets[2] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, startOfCloth - 10, ratio);
+        pockets[3] = new Pocket(startOfCloth, endOfClothY, ratio);
+        pockets[4] = new Pocket(endOfClothX, endOfClothY, ratio);
+        pockets[5] = new Pocket((endOfClothX - startOfCloth) / 2 + startOfCloth, endOfClothY + 10, ratio);
+        for (Pocket pocket : pockets){
             gm.addBall(pocket);
         }
         gm.addLine(baulkLine);
