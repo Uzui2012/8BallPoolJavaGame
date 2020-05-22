@@ -1,7 +1,7 @@
 <gitinspector>
 	<version>0.5.0dev</version>
 	<repository>project</repository>
-	<report-date>2020/05/13</report-date>
+	<report-date>2020/05/22</report-date>
 	<changes>
 		<message>The following historical commit information, by author, was found</message>
 		<authors>
@@ -9,9 +9,9 @@
 				<name>Killian</name>
 				<email>killian2100@hotmail.com</email>
 				<gravatar>https://www.gravatar.com/avatar/1eb10d1bdcdba11d54320a4e3366e25b?default=identicon</gravatar>
-				<commits>9</commits>
-				<insertions>2153</insertions>
-				<deletions>250</deletions>
+				<commits>19</commits>
+				<insertions>39435</insertions>
+				<deletions>642</deletions>
 				<percentage-of-changes>100.00</percentage-of-changes>
 			</author>
 		</authors>
@@ -23,10 +23,10 @@
 				<name>Killian</name>
 				<email>killian2100@hotmail.com</email>
 				<gravatar>https://www.gravatar.com/avatar/1eb10d1bdcdba11d54320a4e3366e25b?default=identicon</gravatar>
-				<rows>1903</rows>
-				<stability>88.4</stability>
-				<age>0.3</age>
-				<percentage-in-comments>28.95</percentage-in-comments>
+				<rows>38800</rows>
+				<stability>98.4</stability>
+				<age>0.0</age>
+				<percentage-in-comments>22.48</percentage-in-comments>
 			</author>
 		</authors>
 	</blame>
@@ -81,18 +81,90 @@
 				</authors>
 				<modified_rows>324</modified_rows>
 			</period>
+			<period>
+				<name>2020W21</name>
+				<authors>
+					<author>
+						<name>Killian</name>
+						<email>killian2100@hotmail.com</email>
+						<gravatar>https://www.gravatar.com/avatar/1eb10d1bdcdba11d54320a4e3366e25b?default=identicon</gravatar>
+						<work>+++++++++++++++++++++++</work>
+					</author>
+				</authors>
+				<modified_rows>37674</modified_rows>
+			</period>
 		</periods>
 	</timeline>
 	<metrics>
 		<violations>
 			<estimated-lines-of-code>
+				<file-name>docs/script-dir/jquery-3.4.1.js</file-name>
+				<value>8788</value>
+			</estimated-lines-of-code>
+			<estimated-lines-of-code>
+				<file-name>docs/script-dir/external/jquery/jquery.js</file-name>
+				<value>8788</value>
+			</estimated-lines-of-code>
+			<estimated-lines-of-code>
+				<file-name>docs/script-dir/jszip/dist/jszip.js</file-name>
+				<value>7637</value>
+			</estimated-lines-of-code>
+			<estimated-lines-of-code>
+				<file-name>docs/script-dir/jquery-ui.js</file-name>
+				<value>2373</value>
+			</estimated-lines-of-code>
+			<estimated-lines-of-code>
+				<file-name>pool-game/src/main/java/com/killian/Pool.java</file-name>
+				<value>670</value>
+			</estimated-lines-of-code>
+			<estimated-lines-of-code>
 				<file-name>pool-game/src/main/java/com/killian/GameArena.java</file-name>
 				<value>533</value>
 			</estimated-lines-of-code>
 			<cyclomatic-complexity>
+				<file-name>docs/script-dir/jquery-3.4.1.js</file-name>
+				<value>2780</value>
+			</cyclomatic-complexity>
+			<cyclomatic-complexity>
+				<file-name>docs/script-dir/external/jquery/jquery.js</file-name>
+				<value>2780</value>
+			</cyclomatic-complexity>
+			<cyclomatic-complexity>
+				<file-name>docs/script-dir/jszip/dist/jszip.js</file-name>
+				<value>2408</value>
+			</cyclomatic-complexity>
+			<cyclomatic-complexity>
+				<file-name>docs/script-dir/jquery-ui.js</file-name>
+				<value>607</value>
+			</cyclomatic-complexity>
+			<cyclomatic-complexity>
+				<file-name>docs/search.js</file-name>
+				<value>178</value>
+			</cyclomatic-complexity>
+			<cyclomatic-complexity>
+				<file-name>pool-game/src/main/java/com/killian/Pool.java</file-name>
+				<value>128</value>
+			</cyclomatic-complexity>
+			<cyclomatic-complexity>
 				<file-name>pool-game/src/main/java/com/killian/GameArena.java</file-name>
 				<value>105</value>
 			</cyclomatic-complexity>
+			<cyclomatic-complexity-density>
+				<file-name>docs/script-dir/jszip/dist/jszip.min.js</file-name>
+				<value>4.500</value>
+			</cyclomatic-complexity-density>
+			<cyclomatic-complexity-density>
+				<file-name>docs/script-dir/jquery-ui.min.js</file-name>
+				<value>3.500</value>
+			</cyclomatic-complexity-density>
+			<cyclomatic-complexity-density>
+				<file-name>docs/script-dir/jszip-utils/dist/jszip-utils.min.js</file-name>
+				<value>3.000</value>
+			</cyclomatic-complexity-density>
+			<cyclomatic-complexity-density>
+				<file-name>docs/script-dir/jszip-utils/dist/jszip-utils-ie.min.js</file-name>
+				<value>1.000</value>
+			</cyclomatic-complexity-density>
 		</violations>
 	</metrics>
 	<responsibilities>
@@ -104,44 +176,44 @@
 				<gravatar>https://www.gravatar.com/avatar/1eb10d1bdcdba11d54320a4e3366e25b?default=identicon</gravatar>
 				<files>
 					<file>
+						<name>docs/script-dir/jquery-3.4.1.js</name>
+						<rows>8788</rows>
+					</file>
+					<file>
+						<name>docs/script-dir/external/jquery/jquery.js</name>
+						<rows>8788</rows>
+					</file>
+					<file>
+						<name>docs/script-dir/jszip/dist/jszip.js</name>
+						<rows>7633</rows>
+					</file>
+					<file>
+						<name>docs/script-dir/jquery-ui.js</name>
+						<rows>2373</rows>
+					</file>
+					<file>
+						<name>pool-game/src/main/java/com/killian/Pool.java</name>
+						<rows>670</rows>
+					</file>
+					<file>
 						<name>pool-game/src/main/java/com/killian/GameArena.java</name>
 						<rows>533</rows>
 					</file>
 					<file>
-						<name>pool-game/src/main/java/com/killian/Pool.java</name>
-						<rows>243</rows>
+						<name>docs/search.js</name>
+						<rows>329</rows>
 					</file>
 					<file>
 						<name>pool-game/src/main/java/com/killian/Line.java</name>
-						<rows>137</rows>
+						<rows>141</rows>
 					</file>
 					<file>
-						<name>pool-game/src/main/java/com/killian/Rectangle.java</name>
-						<rows>99</rows>
+						<name>docs/script.js</name>
+						<rows>135</rows>
 					</file>
 					<file>
-						<name>pool-game/src/main/java/com/killian/Text.java</name>
-						<rows>89</rows>
-					</file>
-					<file>
-						<name>pool-game/src/main/java/com/killian/Ball.java</name>
-						<rows>89</rows>
-					</file>
-					<file>
-						<name>pool-game/src/main/java/com/killian/Billiard.java</name>
-						<rows>58</rows>
-					</file>
-					<file>
-						<name>pool-game/src/main/java/com/killian/Cue.java</name>
-						<rows>39</rows>
-					</file>
-					<file>
-						<name>pool-game/src/main/java/com/killian/Player.java</name>
-						<rows>18</rows>
-					</file>
-					<file>
-						<name>pool-game/src/test/java/com/killian/AppTest.java</name>
-						<rows>14</rows>
+						<name>pool-game/src/main/java/com/killian/State.java</name>
+						<rows>105</rows>
 					</file>
 				</files>
 			</author>
@@ -151,9 +223,13 @@
 		<message>The extensions below were found in the repository history</message>
 		<used>
 			<extension>java</extension>
+			<extension>js</extension>
 		</used>
 		<unused>
 			<extension>*</extension>
+			<extension>bat</extension>
+			<extension>css</extension>
+			<extension>html</extension>
 			<extension>md</extension>
 			<extension>prefs</extension>
 			<extension>sh</extension>
