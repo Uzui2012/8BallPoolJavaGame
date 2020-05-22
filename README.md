@@ -2,6 +2,9 @@
 Written in Java, by Killian Higgins, using accompanied Game Arena - found [here](https://github.com/finneyj/GameArena/).
 
 ## Compilation
+
+Before compiling, clone or download this project zip/tar file and direct yourself to that directory. 
+
 ### To Compile on linux:
 Open a terminal to this project directory and type the command "<code>sh LINUXCOMPILE.sh</code>".<br>
 If this doesn't work for you, try using the command "<code>javac ./pool-game/src/main/java/com/killian/*.java -d ./target/</code>".<br>Although this is unlikely to work any better than just running the bash script.
